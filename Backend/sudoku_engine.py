@@ -14,3 +14,10 @@ class SudokuEngine:
             if board[row][i] == num:
                 return False
         return True
+    
+    def _is_valid_col(self, board, col, num):
+        # ตรวจสอบว่ามีตัวเลข num อยู่ในคอลัมน์ (col) นี้หรือไม่
+        for i in range(9):
+            if board[i][col] == num:
+                return False
+        return True
