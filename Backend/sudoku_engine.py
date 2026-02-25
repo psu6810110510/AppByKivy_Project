@@ -30,3 +30,13 @@ class SudokuEngine:
                 if board[i + start_row][j + start_col] == num:
                     return False
         return True
+    
+    def is_safe(self, board, row, col, num):
+        # หาจุดเริ่มต้นของกล่อง 3x3 ที่ช่อง (row, col) อาศัยอยู่
+        box_start_row = row - row % 3
+        box_start_col = col - col % 3
+        
+        # ต้องปลอดภัยทั้ง แถว, คอลัมน์ และ กล่อง 3x3
+        return (self._is_valid_row(board, row, num) and
+                self._is_valid_col(board, col, num) and
+                self._is_valid_box(board, box_start_row, box_start_col, num))
