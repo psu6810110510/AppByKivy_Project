@@ -1,3 +1,4 @@
+#Backend
 class SudokuEngine:
     def __init__(self):
         # สร้างตาราง 9x9 โดยใส่ค่า 0 ไว้เป็นค่าเริ่มต้น (0 หมายถึงช่องว่าง)
@@ -20,4 +21,12 @@ class SudokuEngine:
         for i in range(9):
             if board[i][col] == num:
                 return False
+        return True
+    
+    def _is_valid_box(self, board, start_row, start_col, num):
+        # ตรวจสอบว่ามีตัวเลข num อยู่ในกล่อง 3x3 หรือไม่
+        for i in range(3):
+            for j in range(3):
+                if board[i + start_row][j + start_col] == num:
+                    return False
         return True
