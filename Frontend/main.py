@@ -57,3 +57,7 @@ class SudokuApp(App):
         main_layout.add_widget(button_layout)
         
         return main_layout
+    
+# คำสั่งสำหรับเริ่มรันโปรแกรม
+if __name__ == '__main__':
+    SudokuApp().run()
