@@ -54,3 +54,30 @@ class SudokuEngine:
                 if board[i][j] == 0:
                     return i, j
         return None
+    
+    def solve_sudoku(self, board):
+        """
+        แกปริศนา Sudoku โดยใช้ Backtracking Algorithm
+        คืนค่า: True ถ้าแก้ได้สำเร็จ, False ถ้าไม่มีทางแก้
+        """
+        # 1. หาช่องว่าง ถ้าไม่เจอแปลว่าเต็มแล้ว (จบงาน)
+        empty_loc = self.find_empty_location(board)
+        if not empty_loc:
+            return True # แก้เสร็จแล้ว!
+        
+        row, col = empty_loc
+
+        # 2. ลองเติมเลข 1-9
+        for num in range(1, 10):
+            # ตรวจสอบว่าปลอดภัยไหมที่จะวางเลขนี้ (ใช้ฟังก์ชัน Day 1)
+            if self.is_safe(board, row, col, num):
+                board[row][col] = num # ลองวางดู
+
+                # 3. วางแล้วลองไปแก้ช่องถัดไป (Recursive)
+                if self.solve_sudoku(board):
+                    return True
+
+                # 4. ถ้าไปต่อไม่ได้ (ทางตัน) ให้ลบออก (Backtrack) แล้วลองเลขใหม่
+                board[row][col] = 0
+
+        return False # ลองครบ 1-9 แล้วไม่ได้เลย แปลว่าทางนี้ผิด
