@@ -113,3 +113,11 @@ class SudokuEngine:
         self.solve_sudoku(self.board)
         
         return self.board
+
+
+if __name__ == "__main__":
+    game = SudokuEngine()
+    print("Generating a new board...")
+    board = game.generate_board()
+    game.print_board()
+    print("\nIs board valid?", "Yes" if game.solve_sudoku(board) else "No (Wait, it should be full already)")
