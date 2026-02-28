@@ -1,4 +1,7 @@
-#Backend
+#Backend/sudoku_engine.py
+
+import random
+
 class SudokuEngine:
     def __init__(self):
         # สร้างตาราง 9x9 โดยใส่ค่า 0 ไว้เป็นค่าเริ่มต้น (0 หมายถึงช่องว่าง)
@@ -40,3 +43,14 @@ class SudokuEngine:
         return (self._is_valid_row(board, row, num) and
                 self._is_valid_col(board, col, num) and
                 self._is_valid_box(board, box_start_row, box_start_col, num))
+    
+    def find_empty_location(self, board):
+        """
+        ค้นหาช่องว่างในกระดาน (ช่องที่มีค่า 0)
+        คืนค่า: (row, col) ถ้าเจอ, หรือ None ถ้ากระดานเต็มแล้ว
+        """
+        for i in range(9):
+            for j in range(9):
+                if board[i][j] == 0:
+                    return i, j
+        return None
