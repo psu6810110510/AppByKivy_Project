@@ -95,3 +95,21 @@ class SudokuEngine:
         """เติมเลขในกล่องแนวทแยง 3 กล่อง (กล่อง 0, 4, 8)"""
         for i in range(0, 9, 3):
             self._fill_3x3_box(board, i, i)
+
+    def generate_board(self):
+        """
+        สร้างกระดาน Sudoku ที่สมบูรณ์และถูกต้องตามกฎ
+        1. ล้างกระดาน
+        2. สุ่มเติมแนวทแยง
+        3. ใช้ Solver เติมส่วนที่เหลือ
+        """
+        # ล้างกระดานให้เป็น 0 ทั้งหมดก่อน
+        self.board = [[0 for _ in range(9)] for _ in range(9)]
+        
+        # ขั้นตอนที่ 1: สุ่มเติมกล่องแนวทแยง (เพื่อให้ได้โจทย์ที่ไม่ซ้ำเดิม)
+        self._fill_diagonal(self.board)
+        
+        # ขั้นตอนที่ 2: ใช้ Solver เติมช่องที่เหลือให้เต็ม
+        self.solve_sudoku(self.board)
+        
+        return self.board
