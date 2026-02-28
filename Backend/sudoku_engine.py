@@ -81,3 +81,17 @@ class SudokuEngine:
                 board[row][col] = 0
 
         return False # ลองครบ 1-9 แล้วไม่ได้เลย แปลว่าทางนี้ผิด
+    
+    def _fill_3x3_box(self, board, start_row, start_col):
+        """สุ่มเติมเลข 1-9 ลงในกล่อง 3x3"""
+        nums = list(range(1, 10))
+        random.shuffle(nums) # สุ่มลำดับตัวเลข
+        
+        for i in range(3):
+            for j in range(3):
+                board[start_row + i][start_col + j] = nums.pop()
+
+    def _fill_diagonal(self, board):
+        """เติมเลขในกล่องแนวทแยง 3 กล่อง (กล่อง 0, 4, 8)"""
+        for i in range(0, 9, 3):
+            self._fill_3x3_box(board, i, i)
