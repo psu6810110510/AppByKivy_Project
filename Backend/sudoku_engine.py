@@ -152,7 +152,18 @@ class SudokuEngine:
 
 if __name__ == "__main__":
     game = SudokuEngine()
-    print("Generating a new board...")
-    board = game.generate_board()
+    print("Generating Easy Board...")
+    game.generate_board("Easy")
+    print("Puzzle (Player sees this):")
     game.print_board()
-    print("\nIs board valid?", "Yes" if game.solve_sudoku(board) else "No (Wait, it should be full already)")
+    
+    print("\nSolution (Hidden):")
+    for row in game.solution:
+        print(row)
+        
+    print("\nTesting check_move at (0,0)...")
+    # ลองเช็คคำตอบช่องมุมซ้ายบน
+    correct_num = game.solution[0][0]
+    print(f"Correct number is {correct_num}")
+    print(f"Is putting {correct_num} correct? {game.check_move(0, 0, correct_num)}")
+    print(f"Is putting 99 correct? {game.check_move(0, 0, 99)}")
