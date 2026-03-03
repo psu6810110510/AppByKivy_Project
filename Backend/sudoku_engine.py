@@ -98,21 +98,29 @@ class SudokuEngine:
         for i in range(0, 9, 3):
             self._fill_3x3_box(board, i, i)
 
-    def generate_board(self):
+    def generate_board(self, difficulty="Easy"):
         """
-        สร้างกระดาน Sudoku ที่สมบูรณ์และถูกต้องตามกฎ
-        1. ล้างกระดาน
-        2. สุ่มเติมแนวทแยง
-        3. ใช้ Solver เติมส่วนที่เหลือ
+        สร้างโจทย์ Sudoku ตามระดับความยาก
+        difficulty: "Easy", "Medium", "Hard"
         """
-        # ล้างกระดานให้เป็น 0 ทั้งหมดก่อน
+        # 1. สร้างกระดานที่สมบูรณ์ก่อน (เหมือน Day 2)
         self.board = [[0 for _ in range(9)] for _ in range(9)]
-        
-        # ขั้นตอนที่ 1: สุ่มเติมกล่องแนวทแยง (เพื่อให้ได้โจทย์ที่ไม่ซ้ำเดิม)
         self._fill_diagonal(self.board)
-        
-        # ขั้นตอนที่ 2: ใช้ Solver เติมช่องที่เหลือให้เต็ม
         self.solve_sudoku(self.board)
+        
+        # 2. **สำคัญ** เซฟเฉลยเก็บไว้ในตัวแปร solution ก่อนจะไปเจาะรู
+        import copy
+        self.solution = copy.deepcopy(self.board)
+        
+        # 3. กำหนดจำนวนช่องที่จะลบตามความยาก
+        attempts = 30 # Default (Easy)
+        if difficulty == "Medium":
+            attempts = 40
+        elif difficulty == "Hard":
+            attempts = 50
+            
+        # 4. เจาะรูตาราง
+        self.remove_numbers(attempts)
         
         return self.board
     
