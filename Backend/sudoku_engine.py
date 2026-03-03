@@ -115,6 +115,22 @@ class SudokuEngine:
         self.solve_sudoku(self.board)
         
         return self.board
+    
+    def remove_numbers(self, k):
+        """
+        ลบตัวเลขออกจากกระดานจำนวน k ช่อง
+        k: จำนวนช่องที่จะลบ (ยิ่งเยอะยิ่งยาก)
+        """
+        count = k
+        while count != 0:
+            cell_id = random.randint(0, 80) # สุ่มตำแหน่ง 0-80
+            row = cell_id // 9
+            col = cell_id % 9
+            
+            # ถ้าช่องนี้ยังไม่เป็น 0 (ยังมีเลขอยู่) ให้ลบออก
+            if self.board[row][col] != 0:
+                self.board[row][col] = 0
+                count -= 1
 
 
 if __name__ == "__main__":
