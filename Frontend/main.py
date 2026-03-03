@@ -6,6 +6,11 @@ from kivy.uix.textinput import TextInput
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
+import sys
+import os
+# ดึง path ของโฟลเดอร์หลัก เพื่อให้เรียกใช้ Backend ได้
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from Backend.sudoku_engine import SudokuEngine
 
 # สร้างคลาสสำหรับกระดาน Sudoku
 class SudokuBoard(GridLayout):
@@ -17,8 +22,11 @@ class SudokuBoard(GridLayout):
         self.padding = 10   # ระยะขอบรอบกระดาน
         
         # 2. เตรียม List ว่างๆ เอาไว้เก็บช่องตัวเลขทั้ง 81 ช่อง
-        self.cells = []     
-        
+        self.cells = []  
+
+        #สร้างตัวแปรสมองของเกม
+        self.engine = SudokuEngine()
+
         # 3. วนลูป 81 รอบ เพื่อสร้างช่องกรอกตัวเลข (TextInput)
         for i in range(81):
             cell = TextInput(
@@ -31,6 +39,12 @@ class SudokuBoard(GridLayout):
             # นำช่องที่สร้างเสร็จไปแปะบนกระดาน และเก็บเข้า List
             self.add_widget(cell)
             self.cells.append(cell)
+    def clear_board(self, instance):
+        # 1. ล้างตัวเลขบนหน้าจอให้ว่างเปล่า
+        for cell in self.cells:
+            cell.text = ''
+        # 2. ล้างข้อมูลในกระดานหลังบ้านให้เป็น 0 ทั้งหมด
+        self.engine.board = [[0 for _ in range(9)] for _ in range(9)]
 
 # กำหนดขนาดหน้าต่างแอปเริ่มต้น
 Window.size = (500, 650)
@@ -50,6 +64,8 @@ class SudokuApp(App):
         
         btn_clear = Button(text="Clear", font_size=20)
         btn_solve = Button(text="Solve", font_size=20)
+        #เมื่อกดปุ่ม Clear ให้ไปเรียกฟังก์ชัน clear_board
+        btn_clear.bind(on_press=self.board.clear_board)
         
         button_layout.add_widget(btn_clear)
         button_layout.add_widget(btn_solve)
