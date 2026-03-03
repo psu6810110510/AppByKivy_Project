@@ -140,6 +140,15 @@ class SudokuEngine:
                 self.board[row][col] = 0
                 count -= 1
 
+    def check_move(self, row, col, num):
+        """
+        ตรวจสอบว่าเลขที่ผู้เล่นใส่ (num) ตรงกับเฉลย (solution) หรือไม่
+        """
+        if self.solution is None:
+            return False # กันพลาดกรณีที่ยังไม่ได้สร้างโจทย์
+            
+        return self.solution[row][col] == num
+
 
 if __name__ == "__main__":
     game = SudokuEngine()
