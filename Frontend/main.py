@@ -74,6 +74,28 @@ class SudokuApp(App):
         
         return main_layout
     
+def new_game(self, instance):
+        # 1. ให้ Backend สร้างโจทย์ใหม่ (เริ่มต้นด้วยแบบ "Easy" ก่อน)
+        board_data = self.engine.generate_board("Easy")
+        
+        # 2. นำตัวเลขจากโจทย์มาแสดงบนหน้าจอ
+        for i in range(81):
+            row = i // 9
+            col = i % 9
+            val = board_data[row][col]
+            
+            cell = self.cells[i]
+            if val != 0:
+                cell.text = str(val)
+                # ถ้าเป็นตัวเลขโจทย์ (ล็อคไว้ไม่ให้แก้) และเปลี่ยนสีพื้นหลังให้เป็นสีเทาอ่อน
+                cell.readonly = True
+                cell.background_color = [0.9, 0.9, 0.9, 1] 
+            else:
+                cell.text = ''
+                # ถ้าเป็นช่องว่าง (ให้ผู้เล่นพิมพ์ได้ปกติ) และเป็นสีขาว
+                cell.readonly = False
+                cell.background_color = [1, 1, 1, 1]    
+                
 # คำสั่งสำหรับเริ่มรันโปรแกรม
 if __name__ == '__main__':
     SudokuApp().run()
