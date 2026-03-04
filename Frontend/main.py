@@ -45,36 +45,7 @@ class SudokuBoard(GridLayout):
             cell.text = ''
         # 2. ล้างข้อมูลในกระดานหลังบ้านให้เป็น 0 ทั้งหมด
         self.engine.board = [[0 for _ in range(9)] for _ in range(9)]
-
-# กำหนดขนาดหน้าต่างแอปเริ่มต้น
-Window.size = (500, 650)
-
-# สร้างคลาสหลักของแอปพลิเคชัน
-class SudokuApp(App):
-    def build(self):
-        # Layout หลัก จัดเรียงจากบนลงล่าง (แนวตั้ง)
-        main_layout = BoxLayout(orientation='vertical')
-        
-        # ส่วนที่ 1: นำกระดาน SudokuBoard ที่เราสร้างไว้มาใส่ (ให้พื้นที่ความสูง 85%)
-        self.board = SudokuBoard(size_hint=(1, 0.85))
-        main_layout.add_widget(self.board)
-        
-        # ส่วนที่ 2: พื้นที่ปุ่มควบคุมด้านล่าง (ให้พื้นที่ความสูง 15%)
-        button_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.15), padding=10, spacing=10)
-        
-        btn_clear = Button(text="Clear", font_size=20)
-        btn_solve = Button(text="Solve", font_size=20)
-        #เมื่อกดปุ่ม Clear ให้ไปเรียกฟังก์ชัน clear_board
-        btn_clear.bind(on_press=self.board.clear_board)
-        
-        button_layout.add_widget(btn_clear)
-        button_layout.add_widget(btn_solve)
-        
-        main_layout.add_widget(button_layout)
-        
-        return main_layout
-    
-def new_game(self, instance):
+    def new_game(self, instance):
         # 1. ให้ Backend สร้างโจทย์ใหม่ (เริ่มต้นด้วยแบบ "Easy" ก่อน)
         board_data = self.engine.generate_board("Easy")
         
@@ -96,23 +67,42 @@ def new_game(self, instance):
                 cell.readonly = False
                 cell.background_color = [1, 1, 1, 1]    
 
-# ส่วนที่ 2: พื้นที่ปุ่มควบคุมด้านล่าง
+
+
+
+# กำหนดขนาดหน้าต่างแอปเริ่มต้น
+Window.size = (500, 650)
+
+# สร้างคลาสหลักของแอปพลิเคชัน
+class SudokuApp(App):
+    def build(self):
+        # Layout หลัก จัดเรียงจากบนลงล่าง (แนวตั้ง)
+        main_layout = BoxLayout(orientation='vertical')
+        
+        # ส่วนที่ 1: นำกระดาน SudokuBoard ที่เราสร้างไว้มาใส่ (ให้พื้นที่ความสูง 85%)
+        self.board = SudokuBoard(size_hint=(1, 0.85))
+        main_layout.add_widget(self.board)
+        
+        # ส่วนที่ 2: พื้นที่ปุ่มควบคุมด้านล่าง (ให้พื้นที่ความสูง 15%)
         button_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.15), padding=10, spacing=10)
         
-        # 1. สร้างปุ่ม New Game เพิ่มขึ้นมา
         btn_new = Button(text="New Game", font_size=20)
         btn_clear = Button(text="Clear", font_size=20)
         btn_solve = Button(text="Solve", font_size=20)
+        #เมื่อกดปุ่ม Clear ให้ไปเรียกฟังก์ชัน clear_board
         
-        # 2. ผูกปุ่มเข้ากับฟังก์ชัน
-        btn_new.bind(on_press=self.board.new_game)     # ผูกปุ่ม New Game
-        btn_clear.bind(on_press=self.board.clear_board) # ผูกปุ่ม Clear
+        btn_new.bind(on_press=self.board.new_game)
+        btn_clear.bind(on_press=self.board.clear_board)
         
-        # 3. นำปุ่มไปแปะบน Layout
         button_layout.add_widget(btn_new)
         button_layout.add_widget(btn_clear)
         button_layout.add_widget(btn_solve)
         
+        main_layout.add_widget(button_layout)
+        
+        return main_layout
+    
+    
 # คำสั่งสำหรับเริ่มรันโปรแกรม
 if __name__ == '__main__':
     SudokuApp().run()
