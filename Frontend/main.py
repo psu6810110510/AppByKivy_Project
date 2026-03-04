@@ -95,7 +95,24 @@ def new_game(self, instance):
                 # ถ้าเป็นช่องว่าง (ให้ผู้เล่นพิมพ์ได้ปกติ) และเป็นสีขาว
                 cell.readonly = False
                 cell.background_color = [1, 1, 1, 1]    
-                
+
+# ส่วนที่ 2: พื้นที่ปุ่มควบคุมด้านล่าง
+        button_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.15), padding=10, spacing=10)
+        
+        # 1. สร้างปุ่ม New Game เพิ่มขึ้นมา
+        btn_new = Button(text="New Game", font_size=20)
+        btn_clear = Button(text="Clear", font_size=20)
+        btn_solve = Button(text="Solve", font_size=20)
+        
+        # 2. ผูกปุ่มเข้ากับฟังก์ชัน
+        btn_new.bind(on_press=self.board.new_game)     # ผูกปุ่ม New Game
+        btn_clear.bind(on_press=self.board.clear_board) # ผูกปุ่ม Clear
+        
+        # 3. นำปุ่มไปแปะบน Layout
+        button_layout.add_widget(btn_new)
+        button_layout.add_widget(btn_clear)
+        button_layout.add_widget(btn_solve)
+        
 # คำสั่งสำหรับเริ่มรันโปรแกรม
 if __name__ == '__main__':
     SudokuApp().run()
