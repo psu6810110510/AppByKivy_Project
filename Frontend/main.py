@@ -6,6 +6,7 @@ from kivy.uix.textinput import TextInput
 from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
+from kivy.uix.label import Label
 import sys
 import os
 # ดึง path ของโฟลเดอร์หลัก เพื่อให้เรียกใช้ Backend ได้
@@ -76,11 +77,14 @@ Window.size = (500, 650)
 # สร้างคลาสหลักของแอปพลิเคชัน
 class SudokuApp(App):
     def build(self):
+        self.timer_label = Label(text="Time: 00:00", font_size=24, size_hint=(1, 0.1))
+        main_layout.add_widget(self.timer_label)
+
         # Layout หลัก จัดเรียงจากบนลงล่าง (แนวตั้ง)
         main_layout = BoxLayout(orientation='vertical')
         
-        # ส่วนที่ 1: นำกระดาน SudokuBoard ที่เราสร้างไว้มาใส่ (ให้พื้นที่ความสูง 85%)
-        self.board = SudokuBoard(size_hint=(1, 0.85))
+        # ส่วนที่ 1: นำกระดาน SudokuBoard ที่เราสร้างไว้มาใส่ (ให้พื้นที่ความสูง 75%)
+        self.board = SudokuBoard(size_hint=(1, 0.75))
         main_layout.add_widget(self.board)
         
         # ส่วนที่ 2: พื้นที่ปุ่มควบคุมด้านล่าง (ให้พื้นที่ความสูง 15%)
