@@ -7,6 +7,7 @@ from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
+from kivy.clock import Clock
 import sys
 import os
 # ดึง path ของโฟลเดอร์หลัก เพื่อให้เรียกใช้ Backend ได้
@@ -79,6 +80,9 @@ class SudokuApp(App):
     def build(self):
         # 1. ต้องสร้าง Layout หลักขึ้นมาก่อนเป็นอันดับแรกสุดเลย
         main_layout = BoxLayout(orientation='vertical')
+
+        self.seconds_elapsed = 0
+        self.timer_event = None
         
         # 2. ค่อยสร้าง Label และนำไปแปะใส่ main_layout ที่สร้างไว้แล้ว
         self.timer_label = Label(text="Time: 00:00", font_size=24, size_hint=(1, 0.1))
@@ -104,6 +108,12 @@ class SudokuApp(App):
         button_layout.add_widget(btn_solve)
         
         main_layout.add_widget(button_layout)
+        
+    def update_timer(self, dt):
+        self.seconds_elapsed += 1
+        minutes = self.seconds_elapsed // 60
+        seconds = self.seconds_elapsed % 60
+        self.timer_label.text = f"Time: {minutes:02d}:{seconds:02d}"
         
         return main_layout
     
