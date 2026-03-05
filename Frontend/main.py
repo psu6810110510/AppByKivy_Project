@@ -18,72 +18,73 @@ from Backend.sudoku_engine import SudokuEngine
 class SudokuBoard(GridLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # 1. ตั้งค่าตาราง: บังคับให้มี 9 คอลัมน์
         self.cols = 9       
-        self.spacing = 2    # ระยะห่างระหว่างช่อง
-        self.padding = 10   # ระยะขอบรอบกระดาน
-        
-        # 2. เตรียม List ว่างๆ เอาไว้เก็บช่องตัวเลขทั้ง 81 ช่อง
+        self.spacing = 2    
+        self.padding = 10   
         self.cells = []  
-
-        #สร้างตัวแปรสมองของเกม
         self.engine = SudokuEngine()
 
-        # --- [เพิ่ม] ตัวแปรป้องกันการคิดคะแนนตอนสร้างกระดาน ---
+        # ตัวแปรป้องกันการคิดคะแนนตอนสร้างกระดาน
         self.is_generating = False 
 
-        # 3. วนลูป 81 รอบ เพื่อสร้างช่องกรอกตัวเลข (TextInput)
         for i in range(81):
             cell = TextInput(
                 text='',
-                multiline=False,     # ไม่ให้กด Enter ขึ้นบรรทัดใหม่
-                halign='center',     # จัดตัวเลขให้อยู่ตรงกลาง
+                multiline=False,     
+                halign='center',     
                 font_size=24,
-                input_filter='int'   # ให้กรอกได้เฉพาะตัวเลขเท่านั้น
+                input_filter='int'   
             )
-            # --- [เพิ่ม] ---
-            cell.cell_index = i                   # แอบเก็บตำแหน่งช่อง (0-80) ไว้
-            cell.bind(text=self.check_answer)     # สั่งให้จับตาดูว่ามีการพิมพ์ข้อความไหม
             
-            # นำช่องที่สร้างเสร็จไปแปะบนกระดาน และเก็บเข้า List
+            cell.cell_index = i                   
+            cell.bind(text=self.check_answer)     
+            
             self.add_widget(cell)
             self.cells.append(cell)
 
-    # --- [เพิ่มฟังก์ชันนี้เข้าไปใหม่] ---
+    # --- [แก้จุดนี้] นำระบบตรวจคำตอบและให้คะแนนมาใส่ ---
     def check_answer(self, instance, value):
-        # ถ้ากำลังสร้างกระดาน (คอมพิวเตอร์พิมพ์) หรือลบเป็นช่องว่าง ให้ข้ามไปเลย
+        # ถ้ากำลังสร้างกระดาน หรือลบเป็นช่องว่าง ให้ข้ามไปเลย
         if self.is_generating or value == '':
             return
             
-        # ทดสอบ Print ดูว่าจับการพิมพ์ได้ไหม
-        print(f"มีการพิมพ์เลข {value} ลงในช่องที่ {instance.cell_index}")
+        # คำนวณหาแถว (row) และคอลัมน์ (col) จาก index
+        row = instance.cell_index // 9
+        col = instance.cell_index % 9
+        num = int(value)
 
-    # ใส่ instance=None เพื่อไม่ให้แอปเด้งเวลาเรียกใช้งาน
+        # ถาม Backend ว่าเลขนี้ถูกไหม?
+        is_correct = self.engine.check_move(row, col, num)
+        
+        # ดึงตัวแอปหลักมา เพื่อสั่งอัปเดตคะแนน
+        app = App.get_running_app()
+
+        if is_correct:
+            instance.foreground_color = [0, 0.7, 0, 1]  # เปลี่ยนตัวอักษรเป็นสีเขียว
+            instance.readonly = True                    # ตอบถูกแล้ว ล็อคช่องเลย
+            app.update_score(100)                       # บวก 100 คะแนน
+        else:
+            instance.foreground_color = [1, 0, 0, 1]    # เปลี่ยนตัวอักษรเป็นสีแดง
+            app.update_score(-20)                       # ตอบผิด หัก 20 คะแนน
+
     def clear_board(self, instance=None):
-        self.is_generating = True  # <--- [เพิ่ม] เปิดโหมดป้องกัน
+        self.is_generating = True  # เปิดโหมดป้องกัน
 
-        # 1. ล้างตัวเลขบนหน้าจอให้ว่างเปล่า
         for cell in self.cells:
             cell.text = ''
-            # รีเซ็ตสีและสถานะให้พิมพ์ได้ด้วย
             cell.readonly = False
             cell.background_color = [1, 1, 1, 1]
+            cell.foreground_color = [0, 0, 0, 1]  # [เพิ่ม] รีเซ็ตสีตัวอักษรกลับเป็นสีดำ
             
-        # 2. ล้างข้อมูลในกระดานหลังบ้านให้เป็น 0 ทั้งหมด
         self.engine.board = [[0 for _ in range(9)] for _ in range(9)]
-        
-        self.is_generating = False # <--- [เพิ่ม] ปิดโหมดป้องกัน
+        self.is_generating = False # ปิดโหมดป้องกัน
 
-    # ใส่ instance=None เช่นกัน
     def new_game(self, instance=None):
-        # เคลียร์กระดานเก่าทิ้งก่อน
         self.clear_board()
-        self.is_generating = True  # <--- [เพิ่ม] เปิดโหมดป้องกัน
+        self.is_generating = True  # เปิดโหมดป้องกัน
         
-        # 1. ให้ Backend สร้างโจทย์ใหม่ (เริ่มต้นด้วยแบบ "Easy" ก่อน)
         board_data = self.engine.generate_board("Easy")
         
-        # 2. นำตัวเลขจากโจทย์มาแสดงบนหน้าจอ
         for i in range(81):
             row = i // 9
             col = i % 9
@@ -92,16 +93,16 @@ class SudokuBoard(GridLayout):
             cell = self.cells[i]
             if val != 0:
                 cell.text = str(val)
-                # ถ้าเป็นตัวเลขโจทย์ (ล็อคไว้ไม่ให้แก้) และเปลี่ยนสีพื้นหลังให้เป็นสีเทาอ่อน
                 cell.readonly = True
                 cell.background_color = [0.9, 0.9, 0.9, 1] 
+                cell.foreground_color = [0, 0, 0, 1] # สีดำสำหรับเลขโจทย์
             else:
                 cell.text = ''
-                # ถ้าเป็นช่องว่าง (ให้ผู้เล่นพิมพ์ได้ปกติ) และเป็นสีขาว
                 cell.readonly = False
                 cell.background_color = [1, 1, 1, 1]    
+                cell.foreground_color = [0, 0, 0, 1] # สีดำสำหรับช่องว่างเตรียมพิมพ์
                 
-        self.is_generating = False # <--- [เพิ่ม] ปิดโหมดป้องกัน
+        self.is_generating = False # ปิดโหมดป้องกัน
 
 
 # กำหนดขนาดหน้าต่างแอปเริ่มต้น
@@ -110,38 +111,31 @@ Window.size = (500, 650)
 # สร้างคลาสหลักของแอปพลิเคชัน
 class SudokuApp(App):
     def build(self):
-        # 1. ต้องสร้าง Layout หลักขึ้นมาก่อนเป็นอันดับแรกสุดเลย
         main_layout = BoxLayout(orientation='vertical')
 
         self.seconds_elapsed = 0
         self.timer_event = None
         self.score = 0
         
-        # --- สร้างแถบด้านบน (Top Bar) จัดเรียงแนวนอน เพื่อใส่ 2 อย่าง ---
         top_bar = BoxLayout(orientation='horizontal', size_hint=(1, 0.1), padding=10)
         
         self.timer_label = Label(text="Time: 00:00", font_size=24, color=(1, 1, 1, 1))
-        self.score_label = Label(text="Score: 0", font_size=24, color=(1, 1, 0, 1)) # ให้คะแนนเป็นสีเหลือง
+        self.score_label = Label(text="Score: 0", font_size=24, color=(1, 1, 0, 1)) 
         
-        # เอาเวลาและคะแนนใส่ในแถบด้านบน
         top_bar.add_widget(self.timer_label)
         top_bar.add_widget(self.score_label)
         
-        # เอาแถบด้านบนไปแปะในหน้าจอหลัก
         main_layout.add_widget(top_bar)
 
-        # ส่วนที่ 1: นำกระดาน SudokuBoard ที่เราสร้างไว้มาใส่ (ให้พื้นที่ความสูง 75%)
         self.board = SudokuBoard(size_hint=(1, 0.75))
         main_layout.add_widget(self.board)
         
-        # ส่วนที่ 2: พื้นที่ปุ่มควบคุมด้านล่าง (ให้พื้นที่ความสูง 15%)
         button_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.15), padding=10, spacing=10)
         
         btn_new = Button(text="New Game", font_size=20)
         btn_clear = Button(text="Clear", font_size=20)
         btn_solve = Button(text="Solve", font_size=20)
         
-        # นำปุ่มมาผูกกับฟังก์ชันในคลาสนี้ เพื่อให้จัดการกระดานพร้อมกับเรื่องเวลาได้
         btn_new.bind(on_press=self.start_new_game)
         btn_clear.bind(on_press=self.clear_game)
         
@@ -151,11 +145,9 @@ class SudokuApp(App):
         
         main_layout.add_widget(button_layout)
 
-        # คำสั่ง return ต้องอยู่ตรงนี้
         return main_layout
 
     def update_timer(self, dt):
-        """อัปเดตเวลาบนหน้าจอทุกๆ 1 วินาที"""
         self.seconds_elapsed += 1
         minutes = self.seconds_elapsed // 60
         seconds = self.seconds_elapsed % 60
@@ -166,27 +158,22 @@ class SudokuApp(App):
         self.score_label.text = f"Score: {self.score}"
 
     def start_new_game(self, instance):
-        """กด New Game: สั่งสร้างโจทย์ และเริ่มจับเวลา"""
         self.board.new_game()
 
-        # รีเซ็ตเวลาและเริ่มนับใหม่
         self.seconds_elapsed = 0
         self.timer_label.text = "Time: 00:00"
 
         self.score = 0
         self.score_label.text = "Score: 0"
         
-        # ยกเลิกเวลาเก่าถ้ามี
         if self.timer_event:
             self.timer_event.cancel()
 
         self.timer_event = Clock.schedule_interval(self.update_timer, 1)
 
     def clear_game(self, instance):
-        """กด Clear: ล้างกระดาน และหยุดเวลา"""
         self.board.clear_board() 
 
-        # หยุดเวลาและรีเซ็ตกลับเป็น 0
         if self.timer_event:
             self.timer_event.cancel()
 
@@ -196,7 +183,5 @@ class SudokuApp(App):
         self.seconds_elapsed = 0
         self.timer_label.text = "Time: 00:00"
     
-    
-# คำสั่งสำหรับเริ่มรันโปรแกรม
 if __name__ == '__main__':
     SudokuApp().run()
