@@ -204,6 +204,7 @@ class SudokuApp(App):
                        time=self.seconds_elapsed,
                        score=self.score,
                        board_engine=self.board.engine.board,
+                       solution_engine=self.board.engine.solution,
                        cells=cells_data)
         print("🟢 บันทึกเกมสำเร็จ!")
 
@@ -225,6 +226,7 @@ class SudokuApp(App):
             
             # โหลดกระดานหลังบ้าน (Backend)
             self.board.engine.board = data['board_engine']
+            self.board.engine.solution = data['solution_engine']
             
             # โหลดสถานะหน้าจอ (เปิดโหมด is_generating ป้องกันคะแนนเด้งรัวๆ)
             self.board.is_generating = True
