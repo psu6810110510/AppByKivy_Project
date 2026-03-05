@@ -77,11 +77,12 @@ Window.size = (500, 650)
 # สร้างคลาสหลักของแอปพลิเคชัน
 class SudokuApp(App):
     def build(self):
+        # 1. ต้องสร้าง Layout หลักขึ้นมาก่อนเป็นอันดับแรกสุดเลย
+        main_layout = BoxLayout(orientation='vertical')
+        
+        # 2. ค่อยสร้าง Label และนำไปแปะใส่ main_layout ที่สร้างไว้แล้ว
         self.timer_label = Label(text="Time: 00:00", font_size=24, size_hint=(1, 0.1))
         main_layout.add_widget(self.timer_label)
-
-        # Layout หลัก จัดเรียงจากบนลงล่าง (แนวตั้ง)
-        main_layout = BoxLayout(orientation='vertical')
         
         # ส่วนที่ 1: นำกระดาน SudokuBoard ที่เราสร้างไว้มาใส่ (ให้พื้นที่ความสูง 75%)
         self.board = SudokuBoard(size_hint=(1, 0.75))
@@ -93,8 +94,8 @@ class SudokuApp(App):
         btn_new = Button(text="New Game", font_size=20)
         btn_clear = Button(text="Clear", font_size=20)
         btn_solve = Button(text="Solve", font_size=20)
-        #เมื่อกดปุ่ม Clear ให้ไปเรียกฟังก์ชัน clear_board
         
+        #เมื่อกดปุ่ม Clear ให้ไปเรียกฟังก์ชัน clear_board
         btn_new.bind(on_press=self.board.new_game)
         btn_clear.bind(on_press=self.board.clear_board)
         
