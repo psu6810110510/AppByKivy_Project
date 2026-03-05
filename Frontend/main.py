@@ -7,15 +7,13 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.clock import Clock
-from kivy.storage.jsonstore import JsonStore # นำเข้า JsonStore สำหรับ Save/Load
+from kivy.storage.jsonstore import JsonStore 
 import sys
 import os
 
-# ดึง path ของโฟลเดอร์หลัก เพื่อให้เรียกใช้ Backend ได้
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from Backend.sudoku_engine import SudokuEngine
 
-# สร้างคลาสสำหรับกระดาน Sudoku
 class SudokuBoard(GridLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -24,17 +22,19 @@ class SudokuBoard(GridLayout):
         self.padding = 10   
         self.cells = []  
         self.engine = SudokuEngine()
-
-        # ตัวแปรป้องกันการคิดคะแนนตอนสร้างกระดาน
         self.is_generating = False 
 
         for i in range(81):
             cell = TextInput(
-                text='', multiline=False, halign='center', font_size=24, input_filter='int'   
+                text='',
+                multiline=False,     
+                halign='center',     
+                font_size=24,
+                input_filter='int'   
             )
             
             cell.cell_index = i      
-            cell.last_text = ''  # [เพิ่ม] เก็บค่าช่องก่อนเปลี่ยน เพื่อใช้ดึงกลับเวลาพิมพ์ผิด             
+            cell.last_text = ''  # [เพิ่ม] เก็บค่าของช่องก่อนที่จะโดนเปลี่ยน เพื่อใช้เวลา Undo             
             cell.bind(text=self.check_answer)     
             
             self.add_widget(cell)
@@ -44,89 +44,121 @@ class SudokuBoard(GridLayout):
         if self.is_generating:
             return
             
-        # --- [เพิ่ม] 1. Input Validation: ให้ใส่ได้แค่เลข 1-9 ตัวเดียว ---
+        # 1. Input Validation: ดักจับ Error ให้ใส่ได้แค่เลข 1-9 เท่านั้น และห้ามเกิน 1 ตัว
         if value != '':
             if len(value) > 1 or value not in "123456789":
                 self.is_generating = True
                 instance.text = instance.last_text # ดีดกลับไปเป็นค่าล่าสุด
                 self.is_generating = False
                 return
-        # ----------------------------------------------------------------
 
         app = App.get_running_app()
-        # ... (โค้ดเดิมด้านล่างปล่อยไว้เหมือนเดิมก่อน) ...
+
+        # 2. กรณีผู้เล่นลบเลข (Backscape) เพื่อแก้ตัวที่ผิด
+        if value == '':
+            app.record_history(
+                index=instance.cell_index,
+                old_text=instance.last_text, new_text='',
+                old_color=instance.foreground_color[:], new_color=[0, 0, 0, 1],
+                old_readonly=instance.readonly, new_readonly=False,
+                score_diff=0
+            )
+            self.is_generating = True
+            instance.foreground_color = [0, 0, 0, 1]
+            instance.last_text = ''
+            self.is_generating = False
+            return
+
+        # 3. ตรวจคำตอบตามปกติ
+        row = instance.cell_index // 9
+        col = instance.cell_index % 9
+        num = int(value)
+
+        is_correct = self.engine.check_move(row, col, num)
+        
+        old_color = instance.foreground_color[:]
+        old_readonly = instance.readonly
+
         if is_correct:
-            instance.foreground_color = [0, 0.7, 0, 1]  # สีเขียว
-            instance.readonly = True                    # ล็อคช่อง
-            app.update_score(100)                       # +100 คะแนน
+            new_color = [0, 0.7, 0, 1]
+            new_readonly = True
+            score_diff = 100
         else:
-            instance.foreground_color = [1, 0, 0, 1]    # สีแดง
-            app.update_score(-20)                       # -20 คะแนน
+            new_color = [1, 0, 0, 1]
+            new_readonly = False 
+            score_diff = -20
+
+        # บันทึกประวัติการเดินก่อนเปลี่ยนค่าจริง
+        app.record_history(
+            index=instance.cell_index,
+            old_text=instance.last_text, new_text=value,
+            old_color=old_color, new_color=new_color,
+            old_readonly=old_readonly, new_readonly=new_readonly,
+            score_diff=score_diff
+        )
+
+        self.is_generating = True
+        instance.foreground_color = new_color
+        instance.readonly = new_readonly
+        instance.last_text = value
+        self.is_generating = False
+        app.update_score(score_diff)
 
     def clear_board(self, instance=None):
         self.is_generating = True  
-
         for cell in self.cells:
             cell.text = ''
+            cell.last_text = ''
             cell.readonly = False
             cell.background_color = [1, 1, 1, 1]
             cell.foreground_color = [0, 0, 0, 1]  
-            
         self.engine.board = [[0 for _ in range(9)] for _ in range(9)]
         self.is_generating = False 
 
     def new_game(self, instance=None):
         self.clear_board()
         self.is_generating = True  
-        
         board_data = self.engine.generate_board("Easy")
-        
         for i in range(81):
             row = i // 9
             col = i % 9
             val = board_data[row][col]
-            
             cell = self.cells[i]
             if val != 0:
                 cell.text = str(val)
+                cell.last_text = str(val)
                 cell.readonly = True
                 cell.background_color = [0.9, 0.9, 0.9, 1] 
                 cell.foreground_color = [0, 0, 0, 1] 
             else:
                 cell.text = ''
+                cell.last_text = ''
                 cell.readonly = False
                 cell.background_color = [1, 1, 1, 1]    
                 cell.foreground_color = [0, 0, 0, 1] 
-                
         self.is_generating = False
     
-    # --- ฟังก์ชันหาคำใบ้ ---
     def get_hint_data(self):
-        # วนลูปหาช่องในกระดาน
         for i, cell in enumerate(self.cells):
-            # ข้ามช่องที่ถูกล็อคไว้แล้ว (คือโจทย์ดั้งเดิม, ช่องที่ตอบถูกไปแล้ว, หรือช่องที่เคยใบ้ไปแล้ว)
             if cell.readonly:
                 continue
-                
             row = i // 9
             col = i % 9
             correct_val = self.engine.solution[row][col]
-
-            # ถ้าเป็นช่องว่าง หรือผู้เล่นใส่เลขผิดอยู่ ให้รีเทิร์นตำแหน่งและเลขที่ถูกกลับไป
             if cell.text == '' or cell.text != str(correct_val):
                 return i, correct_val
-                
-        # ถ้าไม่มีช่องให้ใบ้แล้ว (กระดานเต็ม/ถูกหมด)
         return None, None
 
 
-# กำหนดขนาดหน้าต่างแอปเริ่มต้น
-Window.size = (500, 700) # เพิ่มความสูงหน้าต่างนิดหน่อยให้พอดีกับปุ่ม 2 แถว
+Window.size = (500, 700) 
 
 class SudokuApp(App):
     def build(self):
-        # สร้างตัวแปร Store ไว้เก็บไฟล์ชื่อ sudoku_save.json
         self.store = JsonStore('sudoku_save.json')
+        
+        # [เพิ่ม] ประวัติสำหรับ Undo/Redo
+        self.undo_stack = []
+        self.redo_stack = []
 
         main_layout = BoxLayout(orientation='vertical')
 
@@ -134,7 +166,6 @@ class SudokuApp(App):
         self.timer_event = None
         self.score = 0
         
-        # --- แถบด้านบน (เวลา & คะแนน) ---
         top_bar = BoxLayout(orientation='horizontal', size_hint=(1, 0.1), padding=10)
         self.timer_label = Label(text="Time: 00:00", font_size=24, color=(1, 1, 1, 1))
         self.score_label = Label(text="Score: 0", font_size=24, color=(1, 1, 0, 1)) 
@@ -142,36 +173,41 @@ class SudokuApp(App):
         top_bar.add_widget(self.score_label)
         main_layout.add_widget(top_bar)
 
-        # --- กระดาน Sudoku ---
-        self.board = SudokuBoard(size_hint=(1, 0.70))
+        self.board = SudokuBoard(size_hint=(1, 0.60)) # ย่อบอร์ดนิดนึงเผื่อปุ่ม 3 แถว
         main_layout.add_widget(self.board)
         
-        # --- ปุ่มแถวที่ 1 (ควบคุมเกมหลัก) ---
+        # --- แถวปุ่ม 1: เกมหลัก ---
         row1_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), padding=[10, 5, 10, 5], spacing=10)
         btn_new = Button(text="New Game", font_size=20)
         btn_clear = Button(text="Clear", font_size=20)
         btn_hint = Button(text="Hint", font_size=20)
-        
         btn_new.bind(on_press=self.start_new_game)
         btn_clear.bind(on_press=self.clear_game)
         btn_hint.bind(on_press=self.give_hint)
-        
         row1_layout.add_widget(btn_new)
         row1_layout.add_widget(btn_clear)
         row1_layout.add_widget(btn_hint)
         main_layout.add_widget(row1_layout)
 
-        # --- ปุ่มแถวที่ 2 (Save / Load) ---
-        row2_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), padding=[10, 5, 10, 10], spacing=10)
+        # --- แถวปุ่ม 2: Undo / Redo ---
+        row2_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), padding=[10, 5, 10, 5], spacing=10)
+        btn_undo = Button(text="Undo", font_size=20, background_color=[0.8, 0.8, 0.8, 1], color=[0,0,0,1])
+        btn_redo = Button(text="Redo", font_size=20, background_color=[0.8, 0.8, 0.8, 1], color=[0,0,0,1])
+        btn_undo.bind(on_press=self.undo_move)
+        btn_redo.bind(on_press=self.redo_move)
+        row2_layout.add_widget(btn_undo)
+        row2_layout.add_widget(btn_redo)
+        main_layout.add_widget(row2_layout)
+
+        # --- แถวปุ่ม 3: Save / Load ---
+        row3_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), padding=[10, 5, 10, 10], spacing=10)
         btn_save = Button(text="Save Game", font_size=20, background_color=[0.2, 0.6, 1, 1])
         btn_load = Button(text="Load Game", font_size=20, background_color=[1, 0.6, 0.2, 1])
-        
         btn_save.bind(on_press=self.save_game)
         btn_load.bind(on_press=self.load_game)
-        
-        row2_layout.add_widget(btn_save)
-        row2_layout.add_widget(btn_load)
-        main_layout.add_widget(row2_layout)
+        row3_layout.add_widget(btn_save)
+        row3_layout.add_widget(btn_load)
+        main_layout.add_widget(row3_layout)
 
         return main_layout
 
@@ -191,6 +227,8 @@ class SudokuApp(App):
         self.timer_label.text = "Time: 00:00"
         self.score = 0
         self.score_label.text = "Score: 0"
+        self.undo_stack.clear() # ล้างประวัติ
+        self.redo_stack.clear()
         
         if self.timer_event:
             self.timer_event.cancel()
@@ -204,89 +242,130 @@ class SudokuApp(App):
         self.score_label.text = "Score: 0"
         self.seconds_elapsed = 0
         self.timer_label.text = "Time: 00:00"
+        self.undo_stack.clear()
+        self.redo_stack.clear()
 
-    # --- ฟังก์ชัน Save ---
+    # --- ฟังก์ชันจัดการประวัติ Undo / Redo ---
+    def record_history(self, index, old_text, new_text, old_color, new_color, old_readonly, new_readonly, score_diff):
+        action = {
+            'index': index, 'old_text': old_text, 'new_text': new_text,
+            'old_color': old_color, 'new_color': new_color,
+            'old_readonly': old_readonly, 'new_readonly': new_readonly,
+            'score_diff': score_diff
+        }
+        self.undo_stack.append(action)
+        self.redo_stack.clear() # ถ้าเดินใหม่ ให้ทิ้งอนาคตที่ Redo ได้ทิ้งไป
+
+    def undo_move(self, instance):
+        if not self.undo_stack:
+            print("🚫 สุดทางแล้ว ไม่มีอะไรให้ Undo!")
+            return
+            
+        action = self.undo_stack.pop()
+        self.redo_stack.append(action) # เก็บใส่อนาคตเผื่อเปลี่ยนใจ Redo
+        
+        cell = self.board.cells[action['index']]
+        self.board.is_generating = True
+        cell.text = action['old_text']
+        cell.last_text = action['old_text']
+        cell.foreground_color = action['old_color']
+        cell.readonly = action['old_readonly']
+        self.board.is_generating = False
+        
+        self.update_score(-action['score_diff']) # คืนคะแนนกลับ
+
+    def redo_move(self, instance):
+        if not self.redo_stack:
+            print("🚫 ไม่มีอะไรให้ Redo แล้ว!")
+            return
+            
+        action = self.redo_stack.pop()
+        self.undo_stack.append(action) # คืนกลับไปในประวัติ
+        
+        cell = self.board.cells[action['index']]
+        self.board.is_generating = True
+        cell.text = action['new_text']
+        cell.last_text = action['new_text']
+        cell.foreground_color = action['new_color']
+        cell.readonly = action['new_readonly']
+        self.board.is_generating = False
+        
+        self.update_score(action['score_diff']) # คิดคะแนนใหม่
+
     def save_game(self, instance):
         cells_data = []
-        # เก็บสถานะของช่องแต่ละช่องทั้งหมด
         for cell in self.board.cells:
             cells_data.append({
-                'text': cell.text,
-                'readonly': cell.readonly,
-                'bg_color': cell.background_color,
-                'fg_color': cell.foreground_color
+                'text': cell.text, 'readonly': cell.readonly,
+                'bg_color': cell.background_color, 'fg_color': cell.foreground_color,
+                'last_text': cell.last_text
             })
-        
-        # บันทึกลงไฟล์ JsonStore
         self.store.put('saved_level', 
-                       time=self.seconds_elapsed,
-                       score=self.score,
+                       time=self.seconds_elapsed, score=self.score,
                        board_engine=self.board.engine.board,
                        solution_engine=self.board.engine.solution,
                        cells=cells_data)
         print("🟢 บันทึกเกมสำเร็จ!")
 
-    # --- ฟังก์ชัน Load ---
     def load_game(self, instance):
-        # เช็คก่อนว่ามีไฟล์เซฟอยู่ไหม
         if self.store.exists('saved_level'):
             data = self.store.get('saved_level')
-            
-            # โหลดเวลา
             self.seconds_elapsed = data['time']
             minutes = self.seconds_elapsed // 60
             seconds = self.seconds_elapsed % 60
             self.timer_label.text = f"Time: {minutes:02d}:{seconds:02d}"
             
-            # โหลดคะแนน
             self.score = data['score']
             self.score_label.text = f"Score: {self.score}"
             
-            # โหลดกระดานหลังบ้าน (Backend)
             self.board.engine.board = data['board_engine']
             self.board.engine.solution = data['solution_engine']
             
-            # โหลดสถานะหน้าจอ (เปิดโหมด is_generating ป้องกันคะแนนเด้งรัวๆ)
             self.board.is_generating = True
             for i, cell_data in enumerate(data['cells']):
                 cell = self.board.cells[i]
                 cell.text = cell_data['text']
+                cell.last_text = cell_data.get('last_text', '') # ดึงค่าเก่ากลับมาด้วย
                 cell.readonly = cell_data['readonly']
                 cell.background_color = cell_data['bg_color']
                 cell.foreground_color = cell_data['fg_color']
             self.board.is_generating = False
             
-            # ให้เวลาเดินต่อ
+            self.undo_stack.clear() # โหลดเซฟมาใหม่ ล้างประวัติการเดิน
+            self.redo_stack.clear()
+
             if self.timer_event:
                 self.timer_event.cancel()
             self.timer_event = Clock.schedule_interval(self.update_timer, 1)
-            
             print("🟠 โหลดเกมสำเร็จ!")
         else:
             print("🔴 ไม่พบไฟล์เซฟเก่า!")
 
-    # --- ฟังก์ชัน Hint ---
     def give_hint(self, instance):
-        # 1. ไปขอตำแหน่งและคำตอบจากบอร์ด
         cell_index, correct_val = self.board.get_hint_data()
         
         if cell_index is not None:
             cell = self.board.cells[cell_index]
+            old_color = cell.foreground_color[:]
+            old_readonly = cell.readonly
             
-            # 2. เปิดโหมดป้องกัน ไม่ให้ฟังก์ชันเช็คคำตอบอัตโนมัติ (check_answer) ทำงานซ้อนทับ
+            # บันทึกประวัติเพื่อให้ Hint ก็ Undo ได้
+            self.record_history(
+                index=cell_index,
+                old_text=cell.last_text, new_text=str(correct_val),
+                old_color=old_color, new_color=[0, 0.4, 1, 1],
+                old_readonly=old_readonly, new_readonly=True,
+                score_diff=-30
+            )
+
             self.board.is_generating = True
-            
-            # 3. ใส่ตัวเลข เปลี่ยนสีเป็นสีฟ้า และล็อคช่อง
             cell.text = str(correct_val)
-            cell.foreground_color = [0, 0.4, 1, 1] # สีฟ้าเท่ๆ สำหรับคำใบ้
+            cell.last_text = str(correct_val)
+            cell.foreground_color = [0, 0.4, 1, 1] 
             cell.readonly = True
-            
-            # ปิดโหมดป้องกัน
             self.board.is_generating = False
             
-            # 4. หักคะแนนเป็นค่าผ่านทาง! (ใบ้ 1 ครั้ง หัก 30 คะแนน)
             self.update_score(-30)
-            print(f"💡 ใบ้คำตอบช่องที่ {cell_index} เป็นเลข {correct_val} (หัก 30 คะแนน)")
         else:
             print("✨ กระดานสมบูรณ์แล้ว ไม่มีอะไรให้ใบ้!")
 
