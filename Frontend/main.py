@@ -100,7 +100,26 @@ class SudokuBoard(GridLayout):
                 cell.background_color = [1, 1, 1, 1]    
                 cell.foreground_color = [0, 0, 0, 1] 
                 
-        self.is_generating = False 
+        self.is_generating = False
+    
+    # --- [เพิ่มฟังก์ชันนี้ในคลาส SudokuBoard] ---
+    def get_hint_data(self):
+        # วนลูปหาช่องในกระดาน
+        for i, cell in enumerate(self.cells):
+            # ข้ามช่องที่ถูกล็อคไว้แล้ว (คือโจทย์ดั้งเดิม, ช่องที่ตอบถูกไปแล้ว, หรือช่องที่เคยใบ้ไปแล้ว)
+            if cell.readonly:
+                continue
+                
+            row = i // 9
+            col = i % 9
+            correct_val = self.engine.solution[row][col]
+
+            # ถ้าเป็นช่องว่าง หรือผู้เล่นใส่เลขผิดอยู่ ให้รีเทิร์นตำแหน่งและเลขที่ถูกกลับไป
+            if cell.text == '' or cell.text != str(correct_val):
+                return i, correct_val
+                
+        # ถ้าไม่มีช่องให้ใบ้แล้ว (กระดานเต็ม/ถูกหมด)
+        return None, None
 
 
 # กำหนดขนาดหน้าต่างแอปเริ่มต้น
