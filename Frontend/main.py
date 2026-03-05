@@ -108,16 +108,20 @@ class SudokuApp(App):
         button_layout.add_widget(btn_solve)
         
         main_layout.add_widget(button_layout)
-        
+
+        # คำสั่ง return ต้องอยู่ตรงนี้ครับ (ย่อหน้าให้ตรงกับ main_layout บรรทัดบนๆ)
+        return main_layout
+
     def update_timer(self, dt):
         self.seconds_elapsed += 1
         minutes = self.seconds_elapsed // 60
         seconds = self.seconds_elapsed % 60
         self.timer_label.text = f"Time: {minutes:02d}:{seconds:02d}"
-        
-        return main_layout
     
     
+# คำสั่งสำหรับเริ่มรันโปรแกรม
+if __name__ == '__main__':
+    SudokuApp().run()
 # คำสั่งสำหรับเริ่มรันโปรแกรม
 if __name__ == '__main__':
     SudokuApp().run()
