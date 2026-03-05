@@ -138,6 +138,16 @@ class SudokuApp(App):
         minutes = self.seconds_elapsed // 60
         seconds = self.seconds_elapsed % 60
         self.timer_label.text = f"Time: {minutes:02d}:{seconds:02d}"
+    
+    def update_timer(self, dt):
+        self.seconds_elapsed += 1
+        minutes = self.seconds_elapsed // 60
+        seconds = self.seconds_elapsed % 60
+        self.timer_label.text = f"Time: {minutes:02d}:{seconds:02d}"
+
+    def update_score(self, points):
+        self.score += points
+        self.score_label.text = f"Score: {self.score}"
 
     def start_new_game(self, instance):
         """กด New Game: สั่งสร้างโจทย์ และเริ่มจับเวลา"""
@@ -146,6 +156,9 @@ class SudokuApp(App):
         # รีเซ็ตเวลาและเริ่มนับใหม่
         self.seconds_elapsed = 0
         self.timer_label.text = "Time: 00:00"
+
+        self.score = 0
+        self.score_label.text = "Score: 0"
         
         # ยกเลิกเวลาเก่าถ้ามี
         if self.timer_event:
@@ -160,6 +173,9 @@ class SudokuApp(App):
         # หยุดเวลาและรีเซ็ตกลับเป็น 0
         if self.timer_event:
             self.timer_event.cancel()
+
+        self.score = 0
+        self.score_label.text = "Score: 0"
             
         self.seconds_elapsed = 0
         self.timer_label.text = "Time: 00:00"
