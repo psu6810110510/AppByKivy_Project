@@ -1,4 +1,3 @@
-#this is main.py, the main file of the project. It is responsible for running the app and managing the screens.
 # นำเข้าเครื่องมือของ Kivy ที่จำเป็นต้องใช้
 from kivy.app import App
 from kivy.uix.gridlayout import GridLayout
@@ -30,6 +29,9 @@ class SudokuBoard(GridLayout):
         #สร้างตัวแปรสมองของเกม
         self.engine = SudokuEngine()
 
+        # --- [เพิ่ม] ตัวแปรป้องกันการคิดคะแนนตอนสร้างกระดาน ---
+        self.is_generating = False 
+
         # 3. วนลูป 81 รอบ เพื่อสร้างช่องกรอกตัวเลข (TextInput)
         for i in range(81):
             cell = TextInput(
@@ -39,12 +41,27 @@ class SudokuBoard(GridLayout):
                 font_size=24,
                 input_filter='int'   # ให้กรอกได้เฉพาะตัวเลขเท่านั้น
             )
+            # --- [เพิ่ม] ---
+            cell.cell_index = i                   # แอบเก็บตำแหน่งช่อง (0-80) ไว้
+            cell.bind(text=self.check_answer)     # สั่งให้จับตาดูว่ามีการพิมพ์ข้อความไหม
+            
             # นำช่องที่สร้างเสร็จไปแปะบนกระดาน และเก็บเข้า List
             self.add_widget(cell)
             self.cells.append(cell)
 
+    # --- [เพิ่มฟังก์ชันนี้เข้าไปใหม่] ---
+    def check_answer(self, instance, value):
+        # ถ้ากำลังสร้างกระดาน (คอมพิวเตอร์พิมพ์) หรือลบเป็นช่องว่าง ให้ข้ามไปเลย
+        if self.is_generating or value == '':
+            return
+            
+        # ทดสอบ Print ดูว่าจับการพิมพ์ได้ไหม
+        print(f"มีการพิมพ์เลข {value} ลงในช่องที่ {instance.cell_index}")
+
     # ใส่ instance=None เพื่อไม่ให้แอปเด้งเวลาเรียกใช้งาน
     def clear_board(self, instance=None):
+        self.is_generating = True  # <--- [เพิ่ม] เปิดโหมดป้องกัน
+
         # 1. ล้างตัวเลขบนหน้าจอให้ว่างเปล่า
         for cell in self.cells:
             cell.text = ''
@@ -54,11 +71,14 @@ class SudokuBoard(GridLayout):
             
         # 2. ล้างข้อมูลในกระดานหลังบ้านให้เป็น 0 ทั้งหมด
         self.engine.board = [[0 for _ in range(9)] for _ in range(9)]
+        
+        self.is_generating = False # <--- [เพิ่ม] ปิดโหมดป้องกัน
 
     # ใส่ instance=None เช่นกัน
     def new_game(self, instance=None):
         # เคลียร์กระดานเก่าทิ้งก่อน
         self.clear_board()
+        self.is_generating = True  # <--- [เพิ่ม] เปิดโหมดป้องกัน
         
         # 1. ให้ Backend สร้างโจทย์ใหม่ (เริ่มต้นด้วยแบบ "Easy" ก่อน)
         board_data = self.engine.generate_board("Easy")
@@ -80,6 +100,8 @@ class SudokuBoard(GridLayout):
                 # ถ้าเป็นช่องว่าง (ให้ผู้เล่นพิมพ์ได้ปกติ) และเป็นสีขาว
                 cell.readonly = False
                 cell.background_color = [1, 1, 1, 1]    
+                
+        self.is_generating = False # <--- [เพิ่ม] ปิดโหมดป้องกัน
 
 
 # กำหนดขนาดหน้าต่างแอปเริ่มต้น
@@ -95,7 +117,7 @@ class SudokuApp(App):
         self.timer_event = None
         self.score = 0
         
-        # --- [แก้จุดนี้ครับ] สร้างแถบด้านบน (Top Bar) จัดเรียงแนวนอน เพื่อใส่ 2 อย่าง ---
+        # --- สร้างแถบด้านบน (Top Bar) จัดเรียงแนวนอน เพื่อใส่ 2 อย่าง ---
         top_bar = BoxLayout(orientation='horizontal', size_hint=(1, 0.1), padding=10)
         
         self.timer_label = Label(text="Time: 00:00", font_size=24, color=(1, 1, 1, 1))
@@ -134,12 +156,6 @@ class SudokuApp(App):
 
     def update_timer(self, dt):
         """อัปเดตเวลาบนหน้าจอทุกๆ 1 วินาที"""
-        self.seconds_elapsed += 1
-        minutes = self.seconds_elapsed // 60
-        seconds = self.seconds_elapsed % 60
-        self.timer_label.text = f"Time: {minutes:02d}:{seconds:02d}"
-    
-    def update_timer(self, dt):
         self.seconds_elapsed += 1
         minutes = self.seconds_elapsed // 60
         seconds = self.seconds_elapsed % 60
