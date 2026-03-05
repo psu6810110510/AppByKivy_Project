@@ -270,5 +270,30 @@ class SudokuApp(App):
         else:
             print("🔴 ไม่พบไฟล์เซฟเก่า!")
 
+        # --- [แก้ฟังก์ชันนี้ในคลาส SudokuApp] ---
+    def give_hint(self, instance):
+        # 1. ไปขอตำแหน่งและคำตอบจากบอร์ด
+        cell_index, correct_val = self.board.get_hint_data()
+        
+        if cell_index is not None:
+            cell = self.board.cells[cell_index]
+            
+            # 2. เปิดโหมดป้องกัน ไม่ให้ฟังก์ชันเช็คคำตอบอัตโนมัติ (check_answer) ทำงานซ้อนทับ
+            self.board.is_generating = True
+            
+            # 3. ใส่ตัวเลข เปลี่ยนสีเป็นสีฟ้า และล็อคช่อง
+            cell.text = str(correct_val)
+            cell.foreground_color = [0, 0.4, 1, 1] # สีฟ้าเท่ๆ สำหรับคำใบ้
+            cell.readonly = True
+            
+            # ปิดโหมดป้องกัน
+            self.board.is_generating = False
+            
+            # 4. หักคะแนนเป็นค่าผ่านทาง! (ใบ้ 1 ครั้ง หัก 30 คะแนน)
+            self.update_score(-30)
+            print(f"💡 ใบ้คำตอบช่องที่ {cell_index} เป็นเลข {correct_val} (หัก 30 คะแนน)")
+        else:
+            print("✨ กระดานสมบูรณ์แล้ว ไม่มีอะไรให้ใบ้!")
+
 if __name__ == '__main__':
     SudokuApp().run()
