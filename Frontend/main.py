@@ -10,6 +10,7 @@ from kivy.uix.label import Label
 from kivy.clock import Clock
 import sys
 import os
+
 # ดึง path ของโฟลเดอร์หลัก เพื่อให้เรียกใช้ Backend ได้
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from Backend.sudoku_engine import SudokuEngine
@@ -41,13 +42,24 @@ class SudokuBoard(GridLayout):
             # นำช่องที่สร้างเสร็จไปแปะบนกระดาน และเก็บเข้า List
             self.add_widget(cell)
             self.cells.append(cell)
-    def clear_board(self, instance):
+
+    # ใส่ instance=None เพื่อไม่ให้แอปเด้งเวลาเรียกใช้งาน
+    def clear_board(self, instance=None):
         # 1. ล้างตัวเลขบนหน้าจอให้ว่างเปล่า
         for cell in self.cells:
             cell.text = ''
+            # รีเซ็ตสีและสถานะให้พิมพ์ได้ด้วย
+            cell.readonly = False
+            cell.background_color = [1, 1, 1, 1]
+            
         # 2. ล้างข้อมูลในกระดานหลังบ้านให้เป็น 0 ทั้งหมด
         self.engine.board = [[0 for _ in range(9)] for _ in range(9)]
-    def new_game(self, instance):
+
+    # ใส่ instance=None เช่นกัน
+    def new_game(self, instance=None):
+        # เคลียร์กระดานเก่าทิ้งก่อน
+        self.clear_board()
+        
         # 1. ให้ Backend สร้างโจทย์ใหม่ (เริ่มต้นด้วยแบบ "Easy" ก่อน)
         board_data = self.engine.generate_board("Easy")
         
@@ -68,8 +80,6 @@ class SudokuBoard(GridLayout):
                 # ถ้าเป็นช่องว่าง (ให้ผู้เล่นพิมพ์ได้ปกติ) และเป็นสีขาว
                 cell.readonly = False
                 cell.background_color = [1, 1, 1, 1]    
-
-
 
 
 # กำหนดขนาดหน้าต่างแอปเริ่มต้น
@@ -99,9 +109,9 @@ class SudokuApp(App):
         btn_clear = Button(text="Clear", font_size=20)
         btn_solve = Button(text="Solve", font_size=20)
         
-        #เมื่อกดปุ่ม Clear ให้ไปเรียกฟังก์ชัน clear_board
-        btn_new.bind(on_press=self.board.new_game)
-        btn_clear.bind(on_press=self.board.clear_board)
+        # นำปุ่มมาผูกกับฟังก์ชันในคลาสนี้ เพื่อให้จัดการกระดานพร้อมกับเรื่องเวลาได้
+        btn_new.bind(on_press=self.start_new_game)
+        btn_clear.bind(on_press=self.clear_game)
         
         button_layout.add_widget(btn_new)
         button_layout.add_widget(btn_clear)
@@ -109,19 +119,42 @@ class SudokuApp(App):
         
         main_layout.add_widget(button_layout)
 
-        # คำสั่ง return ต้องอยู่ตรงนี้ครับ (ย่อหน้าให้ตรงกับ main_layout บรรทัดบนๆ)
+        # คำสั่ง return ต้องอยู่ตรงนี้
         return main_layout
 
     def update_timer(self, dt):
+        """อัปเดตเวลาบนหน้าจอทุกๆ 1 วินาที"""
         self.seconds_elapsed += 1
         minutes = self.seconds_elapsed // 60
         seconds = self.seconds_elapsed % 60
         self.timer_label.text = f"Time: {minutes:02d}:{seconds:02d}"
+
+    def start_new_game(self, instance):
+        """กด New Game: สั่งสร้างโจทย์ และเริ่มจับเวลา"""
+        self.board.new_game()
+
+        # รีเซ็ตเวลาและเริ่มนับใหม่
+        self.seconds_elapsed = 0
+        self.timer_label.text = "Time: 00:00"
+        
+        # ยกเลิกเวลาเก่าถ้ามี
+        if self.timer_event:
+            self.timer_event.cancel()
+
+        self.timer_event = Clock.schedule_interval(self.update_timer, 1)
+
+    def clear_game(self, instance):
+        """กด Clear: ล้างกระดาน และหยุดเวลา"""
+        self.board.clear_board() 
+
+        # หยุดเวลาและรีเซ็ตกลับเป็น 0
+        if self.timer_event:
+            self.timer_event.cancel()
+            
+        self.seconds_elapsed = 0
+        self.timer_label.text = "Time: 00:00"
     
     
-# คำสั่งสำหรับเริ่มรันโปรแกรม
-if __name__ == '__main__':
-    SudokuApp().run()
 # คำสั่งสำหรับเริ่มรันโปรแกรม
 if __name__ == '__main__':
     SudokuApp().run()
