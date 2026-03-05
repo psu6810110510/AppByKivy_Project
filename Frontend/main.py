@@ -93,11 +93,21 @@ class SudokuApp(App):
 
         self.seconds_elapsed = 0
         self.timer_event = None
+        self.score = 0
         
-        # 2. ค่อยสร้าง Label และนำไปแปะใส่ main_layout ที่สร้างไว้แล้ว
-        self.timer_label = Label(text="Time: 00:00", font_size=24, size_hint=(1, 0.1))
-        main_layout.add_widget(self.timer_label)
+        # --- [แก้จุดนี้ครับ] สร้างแถบด้านบน (Top Bar) จัดเรียงแนวนอน เพื่อใส่ 2 อย่าง ---
+        top_bar = BoxLayout(orientation='horizontal', size_hint=(1, 0.1), padding=10)
         
+        self.timer_label = Label(text="Time: 00:00", font_size=24, color=(1, 1, 1, 1))
+        self.score_label = Label(text="Score: 0", font_size=24, color=(1, 1, 0, 1)) # ให้คะแนนเป็นสีเหลือง
+        
+        # เอาเวลาและคะแนนใส่ในแถบด้านบน
+        top_bar.add_widget(self.timer_label)
+        top_bar.add_widget(self.score_label)
+        
+        # เอาแถบด้านบนไปแปะในหน้าจอหลัก
+        main_layout.add_widget(top_bar)
+
         # ส่วนที่ 1: นำกระดาน SudokuBoard ที่เราสร้างไว้มาใส่ (ให้พื้นที่ความสูง 75%)
         self.board = SudokuBoard(size_hint=(1, 0.75))
         main_layout.add_widget(self.board)
