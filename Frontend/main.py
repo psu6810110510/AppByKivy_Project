@@ -7,7 +7,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.clock import Clock
-from kivy.storage.jsonstore import JsonStore # [เพิ่ม] นำเข้า JsonStore สำหรับ Save/Load
+from kivy.storage.jsonstore import JsonStore # นำเข้า JsonStore สำหรับ Save/Load
 import sys
 import os
 
@@ -30,33 +30,31 @@ class SudokuBoard(GridLayout):
 
         for i in range(81):
             cell = TextInput(
-                text='',
-                multiline=False,     
-                halign='center',     
-                font_size=24,
-                input_filter='int'   
+                text='', multiline=False, halign='center', font_size=24, input_filter='int'   
             )
             
-            cell.cell_index = i                   
+            cell.cell_index = i      
+            cell.last_text = ''  # [เพิ่ม] เก็บค่าช่องก่อนเปลี่ยน เพื่อใช้ดึงกลับเวลาพิมพ์ผิด             
             cell.bind(text=self.check_answer)     
             
             self.add_widget(cell)
             self.cells.append(cell)
 
     def check_answer(self, instance, value):
-        # ถ้ากำลังสร้างกระดาน หรือลบเป็นช่องว่าง ให้ข้ามไปเลย
-        if self.is_generating or value == '':
+        if self.is_generating:
             return
             
-        row = instance.cell_index // 9
-        col = instance.cell_index % 9
-        num = int(value)
+        # --- [เพิ่ม] 1. Input Validation: ให้ใส่ได้แค่เลข 1-9 ตัวเดียว ---
+        if value != '':
+            if len(value) > 1 or value not in "123456789":
+                self.is_generating = True
+                instance.text = instance.last_text # ดีดกลับไปเป็นค่าล่าสุด
+                self.is_generating = False
+                return
+        # ----------------------------------------------------------------
 
-        # ถาม Backend ว่าเลขนี้ถูกไหม?
-        is_correct = self.engine.check_move(row, col, num)
-        
         app = App.get_running_app()
-
+        # ... (โค้ดเดิมด้านล่างปล่อยไว้เหมือนเดิมก่อน) ...
         if is_correct:
             instance.foreground_color = [0, 0.7, 0, 1]  # สีเขียว
             instance.readonly = True                    # ล็อคช่อง
@@ -102,7 +100,7 @@ class SudokuBoard(GridLayout):
                 
         self.is_generating = False
     
-    # --- [เพิ่มฟังก์ชันนี้ในคลาส SudokuBoard] ---
+    # --- ฟังก์ชันหาคำใบ้ ---
     def get_hint_data(self):
         # วนลูปหาช่องในกระดาน
         for i, cell in enumerate(self.cells):
@@ -207,9 +205,6 @@ class SudokuApp(App):
         self.seconds_elapsed = 0
         self.timer_label.text = "Time: 00:00"
 
-    def give_hint(self, instance):
-        print("💡 กดปุ่ม Hint แล้ว! เตรียมรับคำใบ้...")   
-
     # --- ฟังก์ชัน Save ---
     def save_game(self, instance):
         cells_data = []
@@ -270,7 +265,7 @@ class SudokuApp(App):
         else:
             print("🔴 ไม่พบไฟล์เซฟเก่า!")
 
-        # --- [แก้ฟังก์ชันนี้ในคลาส SudokuApp] ---
+    # --- ฟังก์ชัน Hint ---
     def give_hint(self, instance):
         # 1. ไปขอตำแหน่งและคำตอบจากบอร์ด
         cell_index, correct_val = self.board.get_hint_data()
