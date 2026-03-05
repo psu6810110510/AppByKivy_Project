@@ -8,11 +8,9 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.clock import Clock
 from kivy.storage.jsonstore import JsonStore 
-from kivy.uix.popup import Popup
 import sys
 import os
 
-# แก้ไข Path สำหรับดึง Backend
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from Backend.sudoku_engine import SudokuEngine
 
@@ -36,7 +34,7 @@ class SudokuBoard(GridLayout):
             )
             
             cell.cell_index = i      
-            cell.last_text = ''           
+            cell.last_text = ''  # [เพิ่ม] เก็บค่าของช่องก่อนที่จะโดนเปลี่ยน เพื่อใช้เวลา Undo             
             cell.bind(text=self.check_answer)     
             
             self.add_widget(cell)
@@ -46,17 +44,17 @@ class SudokuBoard(GridLayout):
         if self.is_generating:
             return
             
-        # 1. Input Validation
+        # 1. Input Validation: ดักจับ Error ให้ใส่ได้แค่เลข 1-9 เท่านั้น และห้ามเกิน 1 ตัว
         if value != '':
             if len(value) > 1 or value not in "123456789":
                 self.is_generating = True
-                instance.text = instance.last_text
+                instance.text = instance.last_text # ดีดกลับไปเป็นค่าล่าสุด
                 self.is_generating = False
                 return
 
         app = App.get_running_app()
 
-        # 2. กรณีผู้เล่นลบเลข
+        # 2. กรณีผู้เล่นลบเลข (Backscape) เพื่อแก้ตัวที่ผิด
         if value == '':
             app.record_history(
                 index=instance.cell_index,
@@ -71,7 +69,7 @@ class SudokuBoard(GridLayout):
             self.is_generating = False
             return
 
-        # 3. ตรวจคำตอบ
+        # 3. ตรวจคำตอบตามปกติ
         row = instance.cell_index // 9
         col = instance.cell_index % 9
         num = int(value)
@@ -90,6 +88,7 @@ class SudokuBoard(GridLayout):
             new_readonly = False 
             score_diff = -20
 
+        # บันทึกประวัติการเดินก่อนเปลี่ยนค่าจริง
         app.record_history(
             index=instance.cell_index,
             old_text=instance.last_text, new_text=value,
@@ -104,10 +103,6 @@ class SudokuBoard(GridLayout):
         instance.last_text = value
         self.is_generating = False
         app.update_score(score_diff)
-
-        # [แก้ไขเพิ่ม] ถ้าตอบถูก ให้เช็คว่าชนะเกมหรือยัง
-        if is_correct:
-            Clock.schedule_once(lambda dt: self.check_win(), 0.1)
 
     def clear_board(self, instance=None):
         self.is_generating = True  
@@ -153,37 +148,6 @@ class SudokuBoard(GridLayout):
             if cell.text == '' or cell.text != str(correct_val):
                 return i, correct_val
         return None, None
-    
-    def check_win(self):
-        for cell in self.cells:
-            if not cell.readonly: # ถ้ามีช่องไหนยังไม่ล็อค (แปลว่ายังไม่ถูก) = ยังไม่ชนะ
-                return False
-        self.show_win_popup()
-        return True
-
-    def show_win_popup(self):
-        app = App.get_running_app()
-        if app.timer_event:
-            app.timer_event.cancel()
-
-        content = BoxLayout(orientation='vertical', padding=10, spacing=10)
-        win_label = Label(
-            text=f"🎉 ยินดีด้วย คุณชนะแล้ว! 🎉\n\n{app.timer_label.text}\nScore: {app.score}", 
-            font_size=20, halign='center'
-        )
-        btn_play_again = Button(text="Play Again", size_hint=(1, 0.4), font_size=20)
-        
-        content.add_widget(win_label)
-        content.add_widget(btn_play_again)
-
-        popup = Popup(title='Game Clear!', content=content, size_hint=(0.8, 0.4), auto_dismiss=False)
-        
-        def restart_game(instance):
-            popup.dismiss()
-            app.start_new_game(None)
-            
-        btn_play_again.bind(on_press=restart_game)
-        popup.open()
 
 
 Window.size = (500, 700) 
@@ -191,10 +155,13 @@ Window.size = (500, 700)
 class SudokuApp(App):
     def build(self):
         self.store = JsonStore('sudoku_save.json')
+        
+        # [เพิ่ม] ประวัติสำหรับ Undo/Redo
         self.undo_stack = []
         self.redo_stack = []
 
         main_layout = BoxLayout(orientation='vertical')
+
         self.seconds_elapsed = 0
         self.timer_event = None
         self.score = 0
@@ -206,10 +173,10 @@ class SudokuApp(App):
         top_bar.add_widget(self.score_label)
         main_layout.add_widget(top_bar)
 
-        self.board = SudokuBoard(size_hint=(1, 0.60))
+        self.board = SudokuBoard(size_hint=(1, 0.60)) # ย่อบอร์ดนิดนึงเผื่อปุ่ม 3 แถว
         main_layout.add_widget(self.board)
         
-        # ปุ่มแถว 1
+        # --- แถวปุ่ม 1: เกมหลัก ---
         row1_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), padding=[10, 5, 10, 5], spacing=10)
         btn_new = Button(text="New Game", font_size=20)
         btn_clear = Button(text="Clear", font_size=20)
@@ -222,7 +189,7 @@ class SudokuApp(App):
         row1_layout.add_widget(btn_hint)
         main_layout.add_widget(row1_layout)
 
-        # ปุ่มแถว 2
+        # --- แถวปุ่ม 2: Undo / Redo ---
         row2_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), padding=[10, 5, 10, 5], spacing=10)
         btn_undo = Button(text="Undo", font_size=20, background_color=[0.8, 0.8, 0.8, 1], color=[0,0,0,1])
         btn_redo = Button(text="Redo", font_size=20, background_color=[0.8, 0.8, 0.8, 1], color=[0,0,0,1])
@@ -232,7 +199,7 @@ class SudokuApp(App):
         row2_layout.add_widget(btn_redo)
         main_layout.add_widget(row2_layout)
 
-        # ปุ่มแถว 3
+        # --- แถวปุ่ม 3: Save / Load ---
         row3_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), padding=[10, 5, 10, 10], spacing=10)
         btn_save = Button(text="Save Game", font_size=20, background_color=[0.2, 0.6, 1, 1])
         btn_load = Button(text="Load Game", font_size=20, background_color=[1, 0.6, 0.2, 1])
@@ -260,7 +227,7 @@ class SudokuApp(App):
         self.timer_label.text = "Time: 00:00"
         self.score = 0
         self.score_label.text = "Score: 0"
-        self.undo_stack.clear()
+        self.undo_stack.clear() # ล้างประวัติ
         self.redo_stack.clear()
         
         if self.timer_event:
@@ -278,6 +245,7 @@ class SudokuApp(App):
         self.undo_stack.clear()
         self.redo_stack.clear()
 
+    # --- ฟังก์ชันจัดการประวัติ Undo / Redo ---
     def record_history(self, index, old_text, new_text, old_color, new_color, old_readonly, new_readonly, score_diff):
         action = {
             'index': index, 'old_text': old_text, 'new_text': new_text,
@@ -286,13 +254,16 @@ class SudokuApp(App):
             'score_diff': score_diff
         }
         self.undo_stack.append(action)
-        self.redo_stack.clear()
+        self.redo_stack.clear() # ถ้าเดินใหม่ ให้ทิ้งอนาคตที่ Redo ได้ทิ้งไป
 
     def undo_move(self, instance):
         if not self.undo_stack:
+            print("🚫 สุดทางแล้ว ไม่มีอะไรให้ Undo!")
             return
+            
         action = self.undo_stack.pop()
-        self.redo_stack.append(action)
+        self.redo_stack.append(action) # เก็บใส่อนาคตเผื่อเปลี่ยนใจ Redo
+        
         cell = self.board.cells[action['index']]
         self.board.is_generating = True
         cell.text = action['old_text']
@@ -300,13 +271,17 @@ class SudokuApp(App):
         cell.foreground_color = action['old_color']
         cell.readonly = action['old_readonly']
         self.board.is_generating = False
-        self.update_score(-action['score_diff'])
+        
+        self.update_score(-action['score_diff']) # คืนคะแนนกลับ
 
     def redo_move(self, instance):
         if not self.redo_stack:
+            print("🚫 ไม่มีอะไรให้ Redo แล้ว!")
             return
+            
         action = self.redo_stack.pop()
-        self.undo_stack.append(action)
+        self.undo_stack.append(action) # คืนกลับไปในประวัติ
+        
         cell = self.board.cells[action['index']]
         self.board.is_generating = True
         cell.text = action['new_text']
@@ -314,7 +289,8 @@ class SudokuApp(App):
         cell.foreground_color = action['new_color']
         cell.readonly = action['new_readonly']
         self.board.is_generating = False
-        self.update_score(action['score_diff'])
+        
+        self.update_score(action['score_diff']) # คิดคะแนนใหม่
 
     def save_game(self, instance):
         cells_data = []
@@ -329,13 +305,19 @@ class SudokuApp(App):
                        board_engine=self.board.engine.board,
                        solution_engine=self.board.engine.solution,
                        cells=cells_data)
+        print("🟢 บันทึกเกมสำเร็จ!")
 
     def load_game(self, instance):
         if self.store.exists('saved_level'):
             data = self.store.get('saved_level')
             self.seconds_elapsed = data['time']
+            minutes = self.seconds_elapsed // 60
+            seconds = self.seconds_elapsed % 60
+            self.timer_label.text = f"Time: {minutes:02d}:{seconds:02d}"
+            
             self.score = data['score']
             self.score_label.text = f"Score: {self.score}"
+            
             self.board.engine.board = data['board_engine']
             self.board.engine.solution = data['solution_engine']
             
@@ -343,21 +325,31 @@ class SudokuApp(App):
             for i, cell_data in enumerate(data['cells']):
                 cell = self.board.cells[i]
                 cell.text = cell_data['text']
-                cell.last_text = cell_data.get('last_text', '')
+                cell.last_text = cell_data.get('last_text', '') # ดึงค่าเก่ากลับมาด้วย
                 cell.readonly = cell_data['readonly']
                 cell.background_color = cell_data['bg_color']
                 cell.foreground_color = cell_data['fg_color']
             self.board.is_generating = False
-            self.undo_stack.clear()
+            
+            self.undo_stack.clear() # โหลดเซฟมาใหม่ ล้างประวัติการเดิน
             self.redo_stack.clear()
+
+            if self.timer_event:
+                self.timer_event.cancel()
+            self.timer_event = Clock.schedule_interval(self.update_timer, 1)
+            print("🟠 โหลดเกมสำเร็จ!")
+        else:
+            print("🔴 ไม่พบไฟล์เซฟเก่า!")
 
     def give_hint(self, instance):
         cell_index, correct_val = self.board.get_hint_data()
+        
         if cell_index is not None:
             cell = self.board.cells[cell_index]
             old_color = cell.foreground_color[:]
             old_readonly = cell.readonly
             
+            # บันทึกประวัติเพื่อให้ Hint ก็ Undo ได้
             self.record_history(
                 index=cell_index,
                 old_text=cell.last_text, new_text=str(correct_val),
@@ -372,10 +364,10 @@ class SudokuApp(App):
             cell.foreground_color = [0, 0.4, 1, 1] 
             cell.readonly = True
             self.board.is_generating = False
+            
             self.update_score(-30)
-
-            # [แก้ไขเพิ่ม] หลังให้ Hint ให้เช็คด้วยว่าชนะหรือยัง
-            Clock.schedule_once(lambda dt: self.board.check_win(), 0.1)
+        else:
+            print("✨ กระดานสมบูรณ์แล้ว ไม่มีอะไรให้ใบ้!")
 
 if __name__ == '__main__':
     SudokuApp().run()
