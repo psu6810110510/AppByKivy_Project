@@ -133,14 +133,15 @@ class SudokuApp(App):
         row1_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), padding=[10, 5, 10, 5], spacing=10)
         btn_new = Button(text="New Game", font_size=20)
         btn_clear = Button(text="Clear", font_size=20)
-        btn_solve = Button(text="Solve", font_size=20)
+        btn_hint = Button(text="Hint", font_size=20)
         
         btn_new.bind(on_press=self.start_new_game)
         btn_clear.bind(on_press=self.clear_game)
+        btn_hint.bind(on_press=self.give_hint)
         
         row1_layout.add_widget(btn_new)
         row1_layout.add_widget(btn_clear)
-        row1_layout.add_widget(btn_solve)
+        row1_layout.add_widget(btn_hint)
         main_layout.add_widget(row1_layout)
 
         # --- ปุ่มแถวที่ 2 (Save / Load) ---
@@ -186,6 +187,9 @@ class SudokuApp(App):
         self.score_label.text = "Score: 0"
         self.seconds_elapsed = 0
         self.timer_label.text = "Time: 00:00"
+
+    def give_hint(self, instance):
+        print("💡 กดปุ่ม Hint แล้ว! เตรียมรับคำใบ้...")   
 
     # --- ฟังก์ชัน Save ---
     def save_game(self, instance):
