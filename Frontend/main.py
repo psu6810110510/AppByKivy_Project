@@ -9,6 +9,8 @@ from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivy.clock import Clock
 from kivy.storage.jsonstore import JsonStore 
+from kivy.uix.screenmanager import ScreenManager, Screen
+
 import sys
 import os
 
@@ -123,10 +125,10 @@ class SudokuBoard(GridLayout):
         self.engine.board = [[0 for _ in range(9)] for _ in range(9)]
         self.is_generating = False 
 
-    def new_game(self, instance=None):
+    def new_game(self, difficulty="Easy"):
         self.clear_board()
         self.is_generating = True  
-        board_data = self.engine.generate_board("Easy")
+        board_data = self.engine.generate_board(difficulty)
         for i in range(81):
             row = i // 9
             col = i % 9
@@ -383,6 +385,7 @@ class SudokuApp(App):
             self.update_score(-30)
             if self.board.engine.is_game_won():
                 self.show_win_popup()
+
         else:
             print("✨ กระดานสมบูรณ์แล้ว ไม่มีอะไรให้ใบ้!")
 
