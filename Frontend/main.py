@@ -67,6 +67,7 @@ class SudokuBoard(GridLayout):
             self.is_generating = True
             instance.foreground_color = [0, 0, 0, 1]
             instance.last_text = ''
+            self.engine.board[instance.cell_index // 9][instance.cell_index % 9] = 0
             self.is_generating = False
             return
 
@@ -102,6 +103,7 @@ class SudokuBoard(GridLayout):
         instance.foreground_color = new_color
         instance.readonly = new_readonly
         instance.last_text = value
+        self.engine.board[row][col] = int(value)
         self.is_generating = False
         app.update_score(score_diff)
 
@@ -276,6 +278,8 @@ class SudokuApp(App):
         cell.last_text = action['old_text']
         cell.foreground_color = action['old_color']
         cell.readonly = action['old_readonly']
+        val = action['old_text']
+        self.board.engine.board[action['index'] // 9][action['index'] % 9] = int(val) if val else 0
         self.board.is_generating = False
         
         self.update_score(-action['score_diff']) # คืนคะแนนกลับ
@@ -294,6 +298,8 @@ class SudokuApp(App):
         cell.last_text = action['new_text']
         cell.foreground_color = action['new_color']
         cell.readonly = action['new_readonly']
+        val = action['new_text']
+        self.board.engine.board[action['index'] // 9][action['index'] % 9] = int(val) if val else 0
         self.board.is_generating = False
         
         self.update_score(action['score_diff']) # คิดคะแนนใหม่
@@ -370,8 +376,13 @@ class SudokuApp(App):
             cell.foreground_color = [0, 0.4, 1, 1] 
             cell.readonly = True
             self.board.is_generating = False
-            
+            cell.readonly = True
+            row = cell_index // 9
+            col = cell_index % 9
+            self.board.engine.board[row][col] = correct_val
             self.update_score(-30)
+            if self.board.engine.is_game_won():
+                self.show_win_popup()
         else:
             print("✨ กระดานสมบูรณ์แล้ว ไม่มีอะไรให้ใบ้!")
 
