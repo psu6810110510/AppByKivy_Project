@@ -200,18 +200,37 @@ class SudokuEngine:
 
 if __name__ == "__main__":
     game = SudokuEngine()
-    print("Generating Easy Board...")
+    print("--- 1. Generating Easy Board ---")
     game.generate_board("Easy")
-    print("Puzzle (Player sees this):")
+    print("\n[ Puzzle (Player sees this) ]")
     game.print_board()
     
-    print("\nSolution (Hidden):")
+    print("\n[ Solution (Hidden) ]")
     for row in game.solution:
         print(row)
         
-    print("\nTesting check_move at (0,0)...")
-    # ลองเช็คคำตอบช่องมุมซ้ายบน
+    print("\n--- 2. Testing check_move ---")
     correct_num = game.solution[0][0]
-    print(f"Correct number is {correct_num}")
+    print(f"Correct number for (0,0) is {correct_num}")
     print(f"Is putting {correct_num} correct? {game.check_move(0, 0, correct_num)}")
     print(f"Is putting 99 correct? {game.check_move(0, 0, 99)}")
+
+    print("\n--- 3. Testing Hint System ---")
+    hint = game.get_hint()
+    if hint:
+        r, c, num = hint
+        print(f"Hint given at row {r}, col {c}: Number {num}")
+        
+    print("\n--- 4. Testing Reset Puzzle ---")
+    print("Simulating player putting a random number '9' at (0,0)...")
+    game.board[0][0] = 9
+    print(f"First row BEFORE reset: {game.board[0]}")
+    game.reset_puzzle()
+    print(f"First row AFTER reset:  {game.board[0]} (Should revert to original puzzle)")
+    
+    print("\n--- 5. Checking Win Condition ---")
+    print(f"Is game won currently? {game.is_game_won()}")
+    print("Simulating player filling the entire board correctly...")
+    import copy
+    game.board = copy.deepcopy(game.solution) # จำลองว่าเติมเลขถูกหมดทั้งกระดาน
+    print(f"Is game won now? {game.is_game_won()}")
