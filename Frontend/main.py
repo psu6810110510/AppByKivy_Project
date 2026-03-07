@@ -161,6 +161,7 @@ class SudokuBoard(GridLayout):
 
 
 Window.size = (500, 700) 
+Window.clearcolor = (0.05, 0.08, 0.15, 1)
 
 class SudokuApp(App):
     def build(self):
