@@ -176,36 +176,42 @@ class SudokuApp(App):
         self.sm = ScreenManager()
 
         # ==========================================
-        # 2. สร้างหน้าจอ Main Menu
+        # 2. สร้างหน้าจอ Main Menu แบบ Modern
         # ==========================================
         menu_screen = Screen(name='menu')
-        menu_layout = BoxLayout(orientation='vertical', padding=50, spacing=20)
+        menu_layout = BoxLayout(orientation='vertical', padding=40, spacing=15)
         
-        # ป้ายชื่อเกม
-        title = Label(text="KIVY SUDOKU", font_size=50, size_hint=(1, 0.3), color=[0.2, 0.6, 1, 1], bold=True)
-        menu_layout.add_widget(title)
+        # หัวข้อแอป
+        title_box = BoxLayout(orientation='vertical', size_hint=(1, 0.35))
+        title = Label(text="SUDOKU", font_size=60, color=[0.3, 0.7, 1, 1], bold=True)
+        subtitle = Label(text="Select Difficulty to Play", font_size=18, color=[0.6, 0.7, 0.8, 1])
+        title_box.add_widget(title)
+        title_box.add_widget(subtitle)
+        menu_layout.add_widget(title_box)
         
-        # ปุ่มเลือกระดับความยากต่างๆ
-        btn_easy = Button(text="Play EASY", font_size=30, size_hint=(1, 0.15), background_color=[0, 0.7, 0, 1])
+        # [UI Magic 2] background_normal='' ทำให้ปุ่มสีสดและไม่มีเงาดำเทาๆ มาบัง
+        btn_easy = Button(text="EASY", font_size=24, bold=True, size_hint=(1, 0.15), 
+                          background_normal='', background_color=[0.2, 0.8, 0.4, 1])
         btn_easy.bind(on_press=lambda inst: self.start_new_game("Easy"))
         menu_layout.add_widget(btn_easy)
         
-        btn_medium = Button(text="Play MEDIUM", font_size=30, size_hint=(1, 0.15), background_color=[1, 0.6, 0, 1])
+        btn_medium = Button(text="MEDIUM", font_size=24, bold=True, size_hint=(1, 0.15), 
+                            background_normal='', background_color=[0.9, 0.6, 0.1, 1])
         btn_medium.bind(on_press=lambda inst: self.start_new_game("Medium"))
         menu_layout.add_widget(btn_medium)
         
-        btn_hard = Button(text="Play HARD", font_size=30, size_hint=(1, 0.15), background_color=[1, 0, 0, 1])
+        btn_hard = Button(text="HARD", font_size=24, bold=True, size_hint=(1, 0.15), 
+                          background_normal='', background_color=[0.9, 0.3, 0.3, 1])
         btn_hard.bind(on_press=lambda inst: self.start_new_game("Hard"))
         menu_layout.add_widget(btn_hard)
 
-        # ปุ่มออกเกม
-        btn_quit = Button(text="Quit Game", font_size=30, size_hint=(1, 0.15), background_color=[0.5, 0.5, 0.5, 1])
+        btn_quit = Button(text="QUIT", font_size=24, bold=True, size_hint=(1, 0.15), 
+                          background_normal='', background_color=[0.4, 0.4, 0.5, 1])
         btn_quit.bind(on_press=lambda inst: self.stop())
         menu_layout.add_widget(btn_quit)
 
         menu_screen.add_widget(menu_layout)
-        self.sm.add_widget(menu_screen) # นำหน้าเมนูไปใส่ใน Manager
-
+        self.sm.add_widget(menu_screen)
 
         # ==========================================
         # 3. สร้างหน้าจอ Game Screen (หน้าเล่นเกมเดิมของเรา)
