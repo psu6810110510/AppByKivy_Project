@@ -121,6 +121,8 @@ class SudokuEngine:
             
         # 4. เจาะรูตาราง
         self.remove_numbers(attempts)
+
+        self.initial_puzzle = copy.deepcopy(self.board)
         
         return self.board
     
