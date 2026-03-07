@@ -231,19 +231,25 @@ class SudokuApp(App):
         self.score += points
         self.score_label.text = f"Score: {self.score}"
 
-    def start_new_game(self, instance):
-        self.board.new_game()
+    # เปลี่ยนมารับค่า difficulty แทน instance
+    def start_new_game(self, difficulty):
+        self.current_difficulty = difficulty
+        self.board.new_game(difficulty) # ส่งความยากไปให้กระดานสร้างโจทย์
         self.seconds_elapsed = 0
         self.timer_label.text = "Time: 00:00"
         self.score = 0
         self.score_label.text = "Score: 0"
-        self.undo_stack.clear() # ล้างประวัติ
+        self.undo_stack.clear() 
         self.redo_stack.clear()
         
         if self.timer_event:
             self.timer_event.cancel()
         self.timer_event = Clock.schedule_interval(self.update_timer, 1)
 
+        # สลับหน้าต่างไปที่หน้าเล่นเกม ('game')
+        self.sm.transition.direction = 'left'
+        
+        self.sm.current = 'game'
     def clear_game(self, instance):
         self.board.clear_board() 
         if self.timer_event:
@@ -410,6 +416,12 @@ class SudokuApp(App):
 
         # แสดงผล
         popup.open()
+
+    def go_to_menu(self, instance=None):
+        if self.timer_event:
+            self.timer_event.cancel() # หยุดเวลาเมื่อออกไปหน้าเมนู
+        self.sm.transition.direction = 'right' # สั่งให้อนิเมชั่นเลื่อนไปทางขวา
+        self.sm.current = 'menu' # สลับไปที่หน้า 'menu'
 
 if __name__ == '__main__':
     SudokuApp().run()
