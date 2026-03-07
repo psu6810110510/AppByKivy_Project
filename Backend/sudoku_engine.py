@@ -160,6 +160,29 @@ class SudokuEngine:
         if hasattr(self, 'initial_puzzle'):
             self.board = copy.deepcopy(self.initial_puzzle)
 
+    def get_hint(self):
+        """
+        หาช่องว่าง 1 ช่อง แล้วสุ่มเติมตัวเลขที่ถูกต้องจากเฉลย
+        คืนค่า: (row, col, correct_num) ถ้ายอมใบ้ให้, หรือ None ถ้ากระดานเต็มแล้ว
+        """
+        empty_cells = []
+        for i in range(9):
+            for j in range(9):
+                if self.board[i][j] == 0:
+                    empty_cells.append((i, j))
+        
+        if not empty_cells:
+            return None # ไม่มีช่องว่างให้ใบ้แล้ว
+        
+        # สุ่มเลือกช่องว่างมา 1 ช่อง
+        row, col = random.choice(empty_cells)
+        correct_num = self.solution[row][col]
+        
+        # เติมเลขลงในกระดาน
+        self.board[row][col] = correct_num 
+        
+        return row, col, correct_num
+
 
 if __name__ == "__main__":
     game = SudokuEngine()
