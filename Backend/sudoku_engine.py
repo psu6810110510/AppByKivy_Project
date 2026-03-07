@@ -150,6 +150,15 @@ class SudokuEngine:
             return False # กันพลาดกรณีที่ยังไม่ได้สร้างโจทย์
             
         return self.solution[row][col] == num
+    
+    def reset_puzzle(self):
+        """
+        รีเซ็ตกระดานกลับไปเป็นโจทย์เริ่มต้น (ล้างเฉพาะเลขที่ผู้เล่นกรอก)
+        """
+        import copy
+        # ดึงโจทย์เริ่มต้นกลับมาทับกระดานปัจจุบัน
+        if hasattr(self, 'initial_puzzle'):
+            self.board = copy.deepcopy(self.initial_puzzle)
 
 
 if __name__ == "__main__":
