@@ -212,37 +212,36 @@ class SudokuApp(App):
 
         menu_screen.add_widget(menu_layout)
         self.sm.add_widget(menu_screen)
-
         # ==========================================
-        # 3. สร้างหน้าจอ Game Screen (หน้าเล่นเกมเดิมของเรา)
+        # 3. สร้างหน้าจอ Game Screen ให้เข้าธีม
         # ==========================================
         game_screen = Screen(name='game')
-        main_layout = BoxLayout(orientation='vertical')
+        main_layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
 
         self.seconds_elapsed = 0
         self.timer_event = None
         self.score = 0
         
-        # --- แถบด้านบน: เพิ่มปุ่ม < Menu ---
-        top_bar = BoxLayout(orientation='horizontal', size_hint=(1, 0.1), padding=10, spacing=10)
-        btn_back_menu = Button(text="< Menu", font_size=20, size_hint=(0.25, 1), background_color=[0.5, 0.5, 0.5, 1])
+        top_bar = BoxLayout(orientation='horizontal', size_hint=(1, 0.1), spacing=10)
+        btn_back_menu = Button(text="< Menu", font_size=18, bold=True, size_hint=(0.25, 1), 
+                               background_normal='', background_color=[0.4, 0.4, 0.5, 1])
         btn_back_menu.bind(on_press=self.go_to_menu)
         
-        self.timer_label = Label(text="Time: 00:00", font_size=20, size_hint=(0.35, 1))
-        self.score_label = Label(text="Score: 0", font_size=20, color=(1, 1, 0, 1), size_hint=(0.4, 1)) 
+        self.timer_label = Label(text="Time: 00:00", font_size=20, bold=True, size_hint=(0.35, 1), color=[1, 1, 1, 1])
+        self.score_label = Label(text="Score: 0", font_size=20, bold=True, color=[1, 0.8, 0.2, 1], size_hint=(0.4, 1)) 
         
         top_bar.add_widget(btn_back_menu)
         top_bar.add_widget(self.timer_label)
         top_bar.add_widget(self.score_label)
         main_layout.add_widget(top_bar)
 
-        self.board = SudokuBoard(size_hint=(1, 0.60)) 
+        self.board = SudokuBoard(size_hint=(1, 0.65)) 
         main_layout.add_widget(self.board)
         
-        row1_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), padding=[10, 5, 10, 5], spacing=10)
-        btn_new = Button(text="Restart", font_size=20) # เปลี่ยนชื่อจาก New Game เป็น Restart
-        btn_clear = Button(text="Clear", font_size=20)
-        btn_hint = Button(text="Hint", font_size=20)
+        row1_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), spacing=10)
+        btn_new = Button(text="Restart", font_size=18, bold=True, background_normal='', background_color=[0.2, 0.6, 0.9, 1]) 
+        btn_clear = Button(text="Clear", font_size=18, bold=True, background_normal='', background_color=[0.9, 0.3, 0.3, 1])
+        btn_hint = Button(text="Hint", font_size=18, bold=True, background_normal='', background_color=[0.9, 0.6, 0.1, 1])
         btn_new.bind(on_press=lambda inst: self.start_new_game(self.current_difficulty))
         btn_clear.bind(on_press=self.clear_game)
         btn_hint.bind(on_press=self.give_hint)
@@ -251,18 +250,18 @@ class SudokuApp(App):
         row1_layout.add_widget(btn_hint)
         main_layout.add_widget(row1_layout)
 
-        row2_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), padding=[10, 5, 10, 5], spacing=10)
-        btn_undo = Button(text="Undo", font_size=20, background_color=[0.8, 0.8, 0.8, 1], color=[0,0,0,1])
-        btn_redo = Button(text="Redo", font_size=20, background_color=[0.8, 0.8, 0.8, 1], color=[0,0,0,1])
+        row2_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), spacing=10)
+        btn_undo = Button(text="Undo", font_size=18, bold=True, background_normal='', background_color=[0.6, 0.6, 0.7, 1])
+        btn_redo = Button(text="Redo", font_size=18, bold=True, background_normal='', background_color=[0.6, 0.6, 0.7, 1])
         btn_undo.bind(on_press=self.undo_move)
         btn_redo.bind(on_press=self.redo_move)
         row2_layout.add_widget(btn_undo)
         row2_layout.add_widget(btn_redo)
         main_layout.add_widget(row2_layout)
 
-        row3_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), padding=[10, 5, 10, 10], spacing=10)
-        btn_save = Button(text="Save Game", font_size=20, background_color=[0.2, 0.6, 1, 1])
-        btn_load = Button(text="Load Game", font_size=20, background_color=[1, 0.6, 0.2, 1])
+        row3_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), spacing=10)
+        btn_save = Button(text="Save Game", font_size=18, bold=True, background_normal='', background_color=[0.3, 0.8, 0.5, 1])
+        btn_load = Button(text="Load Game", font_size=18, bold=True, background_normal='', background_color=[0.8, 0.4, 0.7, 1])
         btn_save.bind(on_press=self.save_game)
         btn_load.bind(on_press=self.load_game)
         row3_layout.add_widget(btn_save)
@@ -270,7 +269,7 @@ class SudokuApp(App):
         main_layout.add_widget(row3_layout)
 
         game_screen.add_widget(main_layout)
-        self.sm.add_widget(game_screen) # นำหน้าเกมไปใส่ใน Manager
+        self.sm.add_widget(game_screen)
 
         return self.sm
 
@@ -449,27 +448,35 @@ class SudokuApp(App):
             print("✨ กระดานสมบูรณ์แล้ว ไม่มีอะไรให้ใบ้!")
 
     def show_win_popup(self):
-        # หยุดเวลา
         if self.timer_event:
             self.timer_event.cancel()
 
-        # สร้าง Layout สำหรับ Popup
-        content = BoxLayout(orientation='vertical', padding=10, spacing=10)
-        msg_label = Label(text=f"Congratulations!\nYou won with a score of {self.score}\nTime: {self.timer_label.text.split(' ')[1]}", halign='center')                        # 1. Input Validation: ดักจับ Error ให้ใส่ได้แค่เลข 1-9 เท่านั้น และห้ามเกิน 1 ตัว
-        btn_close = Button(text="Close", size_hint=(1, 0.3))
+        content = BoxLayout(orientation='vertical', padding=20, spacing=15)
+        msg_label = Label(text=f"WINNER!\n\nScore: {self.score}\nTime: {self.timer_label.text.split(' ')[1]}", 
+                          halign='center', font_size=24, bold=True, color=[1, 0.8, 0.2, 1])
+        
+        btn_layout = BoxLayout(orientation='horizontal', spacing=10, size_hint=(1, 0.4))
+        btn_close = Button(text="Close", bold=True, background_normal='', background_color=[0.4, 0.4, 0.5, 1])
+        btn_menu = Button(text="Main Menu", bold=True, background_normal='', background_color=[0.2, 0.8, 0.4, 1])
 
+        btn_layout.add_widget(btn_menu)
+        btn_layout.add_widget(btn_close)
+        
         content.add_widget(msg_label)
-        content.add_widget(btn_close)
+        content.add_widget(btn_layout)
 
-        # สร้างหน้าต่าง Popup
-        popup = Popup(title='You Win!', content=content, size_hint=(0.8, 0.4))
-
-        # ผูกปุ่มปิดเพื่อให้ปิดหน้าต่าง
+        popup = Popup(title='Congratulations!', title_size=20, title_align='center', 
+                      content=content, size_hint=(0.85, 0.45), auto_dismiss=False, separator_color=[0.2, 0.8, 0.4, 1])
+        
+        def back_to_menu_from_popup(inst):
+            popup.dismiss()
+            self.go_to_menu(None)
+            
         btn_close.bind(on_press=popup.dismiss)
-
-        # แสดงผล
+        btn_menu.bind(on_press=back_to_menu_from_popup)
+        
         popup.open()
-
+        
     def go_to_menu(self, instance=None):
         if self.timer_event:
             self.timer_event.cancel() # หยุดเวลาเมื่อออกไปหน้าเมนู
