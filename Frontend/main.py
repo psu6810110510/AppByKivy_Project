@@ -165,33 +165,76 @@ Window.size = (500, 700)
 class SudokuApp(App):
     def build(self):
         self.store = JsonStore('sudoku_save.json')
-        
-        # [เพิ่ม] ประวัติสำหรับ Undo/Redo
         self.undo_stack = []
         self.redo_stack = []
+        self.current_difficulty = "Easy" # เก็บสถานะความยาก
 
+        # 1. สร้าง ScreenManager เป็นตัวคุมหน้าจอทั้งหมด
+        self.sm = ScreenManager()
+
+        # ==========================================
+        # 2. สร้างหน้าจอ Main Menu
+        # ==========================================
+        menu_screen = Screen(name='menu')
+        menu_layout = BoxLayout(orientation='vertical', padding=50, spacing=20)
+        
+        # ป้ายชื่อเกม
+        title = Label(text="KIVY SUDOKU", font_size=50, size_hint=(1, 0.3), color=[0.2, 0.6, 1, 1], bold=True)
+        menu_layout.add_widget(title)
+        
+        # ปุ่มเลือกระดับความยากต่างๆ
+        btn_easy = Button(text="Play EASY", font_size=30, size_hint=(1, 0.15), background_color=[0, 0.7, 0, 1])
+        btn_easy.bind(on_press=lambda inst: self.start_new_game("Easy"))
+        menu_layout.add_widget(btn_easy)
+        
+        btn_medium = Button(text="Play MEDIUM", font_size=30, size_hint=(1, 0.15), background_color=[1, 0.6, 0, 1])
+        btn_medium.bind(on_press=lambda inst: self.start_new_game("Medium"))
+        menu_layout.add_widget(btn_medium)
+        
+        btn_hard = Button(text="Play HARD", font_size=30, size_hint=(1, 0.15), background_color=[1, 0, 0, 1])
+        btn_hard.bind(on_press=lambda inst: self.start_new_game("Hard"))
+        menu_layout.add_widget(btn_hard)
+
+        # ปุ่มออกเกม
+        btn_quit = Button(text="Quit Game", font_size=30, size_hint=(1, 0.15), background_color=[0.5, 0.5, 0.5, 1])
+        btn_quit.bind(on_press=lambda inst: self.stop())
+        menu_layout.add_widget(btn_quit)
+
+        menu_screen.add_widget(menu_layout)
+        self.sm.add_widget(menu_screen) # นำหน้าเมนูไปใส่ใน Manager
+
+
+        # ==========================================
+        # 3. สร้างหน้าจอ Game Screen (หน้าเล่นเกมเดิมของเรา)
+        # ==========================================
+        game_screen = Screen(name='game')
         main_layout = BoxLayout(orientation='vertical')
 
         self.seconds_elapsed = 0
         self.timer_event = None
         self.score = 0
         
-        top_bar = BoxLayout(orientation='horizontal', size_hint=(1, 0.1), padding=10)
-        self.timer_label = Label(text="Time: 00:00", font_size=24, color=(1, 1, 1, 1))
-        self.score_label = Label(text="Score: 0", font_size=24, color=(1, 1, 0, 1)) 
+        # --- แถบด้านบน: เพิ่มปุ่ม < Menu ---
+        top_bar = BoxLayout(orientation='horizontal', size_hint=(1, 0.1), padding=10, spacing=10)
+        btn_back_menu = Button(text="< Menu", font_size=20, size_hint=(0.25, 1), background_color=[0.5, 0.5, 0.5, 1])
+        btn_back_menu.bind(on_press=self.go_to_menu)
+        
+        self.timer_label = Label(text="Time: 00:00", font_size=20, size_hint=(0.35, 1))
+        self.score_label = Label(text="Score: 0", font_size=20, color=(1, 1, 0, 1), size_hint=(0.4, 1)) 
+        
+        top_bar.add_widget(btn_back_menu)
         top_bar.add_widget(self.timer_label)
         top_bar.add_widget(self.score_label)
         main_layout.add_widget(top_bar)
 
-        self.board = SudokuBoard(size_hint=(1, 0.60)) # ย่อบอร์ดนิดนึงเผื่อปุ่ม 3 แถว
+        self.board = SudokuBoard(size_hint=(1, 0.60)) 
         main_layout.add_widget(self.board)
         
-        # --- แถวปุ่ม 1: เกมหลัก ---
         row1_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), padding=[10, 5, 10, 5], spacing=10)
-        btn_new = Button(text="New Game", font_size=20)
+        btn_new = Button(text="Restart", font_size=20) # เปลี่ยนชื่อจาก New Game เป็น Restart
         btn_clear = Button(text="Clear", font_size=20)
         btn_hint = Button(text="Hint", font_size=20)
-        btn_new.bind(on_press=self.start_new_game)
+        btn_new.bind(on_press=lambda inst: self.start_new_game(self.current_difficulty))
         btn_clear.bind(on_press=self.clear_game)
         btn_hint.bind(on_press=self.give_hint)
         row1_layout.add_widget(btn_new)
@@ -199,7 +242,6 @@ class SudokuApp(App):
         row1_layout.add_widget(btn_hint)
         main_layout.add_widget(row1_layout)
 
-        # --- แถวปุ่ม 2: Undo / Redo ---
         row2_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), padding=[10, 5, 10, 5], spacing=10)
         btn_undo = Button(text="Undo", font_size=20, background_color=[0.8, 0.8, 0.8, 1], color=[0,0,0,1])
         btn_redo = Button(text="Redo", font_size=20, background_color=[0.8, 0.8, 0.8, 1], color=[0,0,0,1])
@@ -209,7 +251,6 @@ class SudokuApp(App):
         row2_layout.add_widget(btn_redo)
         main_layout.add_widget(row2_layout)
 
-        # --- แถวปุ่ม 3: Save / Load ---
         row3_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), padding=[10, 5, 10, 10], spacing=10)
         btn_save = Button(text="Save Game", font_size=20, background_color=[0.2, 0.6, 1, 1])
         btn_load = Button(text="Load Game", font_size=20, background_color=[1, 0.6, 0.2, 1])
@@ -219,7 +260,10 @@ class SudokuApp(App):
         row3_layout.add_widget(btn_load)
         main_layout.add_widget(row3_layout)
 
-        return main_layout
+        game_screen.add_widget(main_layout)
+        self.sm.add_widget(game_screen) # นำหน้าเกมไปใส่ใน Manager
+
+        return self.sm
 
     def update_timer(self, dt):
         self.seconds_elapsed += 1
@@ -248,7 +292,7 @@ class SudokuApp(App):
 
         # สลับหน้าต่างไปที่หน้าเล่นเกม ('game')
         self.sm.transition.direction = 'left'
-        
+
         self.sm.current = 'game'
     def clear_game(self, instance):
         self.board.clear_board() 
