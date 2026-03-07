@@ -32,8 +32,10 @@ class SudokuBoard(GridLayout):
                 text='',
                 multiline=False,     
                 halign='center',     
-                font_size=24,
-                input_filter='int'   
+                font_size=26,
+                input_filter='int',
+                background_normal='',
+                background_color=[1, 1, 1, 1]
             )
             
             cell.cell_index = i      
