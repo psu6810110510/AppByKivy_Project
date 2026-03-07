@@ -182,6 +182,20 @@ class SudokuEngine:
         self.board[row][col] = correct_num 
         
         return row, col, correct_num
+    
+    def is_game_won(self):
+        """
+        ตรวจสอบว่าผู้เล่นเติมตัวเลขครบและถูกต้องทั้งหมดหรือไม่
+        """
+        if self.solution is None:
+            return False
+            
+        for i in range(9):
+            for j in range(9):
+                # ถ้ายังมีช่องว่าง หรือ มีช่องที่เลขไม่ตรงกับเฉลย = ยังไม่ชนะ
+                if self.board[i][j] == 0 or self.board[i][j] != self.solution[i][j]:
+                    return False
+        return True
 
 
 if __name__ == "__main__":
