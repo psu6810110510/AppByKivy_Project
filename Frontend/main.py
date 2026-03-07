@@ -6,6 +6,7 @@ from kivy.core.window import Window
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
+from kivy.uix.popup import Popup
 from kivy.clock import Clock
 from kivy.storage.jsonstore import JsonStore 
 import sys
@@ -54,7 +55,7 @@ class SudokuBoard(GridLayout):
 
         app = App.get_running_app()
 
-        # 2. กรณีผู้เล่นลบเลข (Backscape) เพื่อแก้ตัวที่ผิด
+        # 2. กรณีผู้เล่นลบเลข (Backspace) เพื่อแก้ตัวที่ผิด
         if value == '':
             app.record_history(
                 index=instance.cell_index,
@@ -104,6 +105,11 @@ class SudokuBoard(GridLayout):
         self.is_generating = False
         app.update_score(score_diff)
 
+        # --- ตรวจสอบ Win Condition ---
+        if is_correct:
+            if self.engine.is_game_won():
+                app.show_win_popup()
+ 
     def clear_board(self, instance=None):
         self.is_generating = True  
         for cell in self.cells:
@@ -368,6 +374,28 @@ class SudokuApp(App):
             self.update_score(-30)
         else:
             print("✨ กระดานสมบูรณ์แล้ว ไม่มีอะไรให้ใบ้!")
+
+    def show_win_popup(self):
+        # หยุดเวลา
+        if self.timer_event:
+            self.timer_event.cancel()
+
+        # สร้าง Layout สำหรับ Popup
+        content = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        msg_label = Label(text=f"Congratulations!\nYou won with a score of {self.score}\nTime: {self.timer_label.text.split(' ')[1]}", halign='center')                        # 1. Input Validation: ดักจับ Error ให้ใส่ได้แค่เลข 1-9 เท่านั้น และห้ามเกิน 1 ตัว
+        btn_close = Button(text="Close", size_hint=(1, 0.3))
+
+        content.add_widget(msg_label)
+        content.add_widget(btn_close)
+
+        # สร้างหน้าต่าง Popup
+        popup = Popup(title='You Win!', content=content, size_hint=(0.8, 0.4))
+
+        # ผูกปุ่มปิดเพื่อให้ปิดหน้าต่าง
+        btn_close.bind(on_press=popup.dismiss)
+
+        # แสดงผล
+        popup.open()
 
 if __name__ == '__main__':
     SudokuApp().run()
