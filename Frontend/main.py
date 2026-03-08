@@ -51,53 +51,108 @@ class SudokuBoard(GridLayout):
     def check_answer(self, instance, value):
         if self.is_generating:
             return
-            
-        # 1. Input Validation: ดักจับ Error ให้ใส่ได้แค่เลข 1-9 เท่านั้น และห้ามเกิน 1 ตัว
-        if value != '':
-            if len(value) > 1 or value not in "123456789":
-                self.is_generating = True
-                instance.text = instance.last_text # ดีดกลับไปเป็นค่าล่าสุด
-                self.is_generating = False
-                return
 
         app = App.get_running_app()
+        row = instance.cell_index // 9
+        col = instance.cell_index % 9
 
-        # 2. กรณีผู้เล่นลบเลข (Backspace) เพื่อแก้ตัวที่ผิด
+        # 1. ถ้าลบเลขจนว่างเปล่า
         if value == '':
             app.record_history(
                 index=instance.cell_index,
                 old_text=instance.last_text, new_text='',
-                old_color=instance.foreground_color[:], new_color=[0, 0, 0, 1],
+                old_color=instance.foreground_color[:], new_color=[0.1, 0.1, 0.1, 1],
                 old_readonly=instance.readonly, new_readonly=False,
                 score_diff=0
             )
             self.is_generating = True
-            instance.foreground_color = [0, 0, 0, 1]
+            instance.foreground_color = [0.1, 0.1, 0.1, 1]
             instance.last_text = ''
-            self.engine.board[instance.cell_index // 9][instance.cell_index % 9] = 0
+            instance.is_note = False
+            instance.font_size = 26 
+            self.engine.board[row][col] = 0 
             self.is_generating = False
             return
 
-        # 3. ตรวจคำตอบตามปกติ
-        row = instance.cell_index // 9
-        col = instance.cell_index % 9
-        num = int(value)
+        # ตรวจสอบว่าต้องเป็นเลข 1-9 เท่านั้น
+        if not value.isdigit() or "0" in value:
+            self.is_generating = True
+            instance.text = instance.last_text
+            self.is_generating = False
+            return
 
+        # =====================================
+        # 2. ทำงานใน "โหมดจดโน้ต" (Note: ON)
+        # =====================================
+        if self.note_mode:
+            # [แก้ไข] เช็คว่าเป็นการกดลบ (Backspace) หรือพิมพ์เพิ่ม
+            if len(value) < len(instance.last_text):
+                # ถ้าผู้ใช้กดลบ ให้ยอมรับค่าที่เหลืออยู่ได้เลย
+                final_notes = "".join(sorted(set(value)))
+            else:
+                # [แก้ไข] หาตัวอักษรที่เพิ่งพิมพ์เข้ามาใหม่จริงๆ (แก้ปัญหาเคอร์เซอร์ไม่ได้อยู่ท้ายสุด)
+                new_char = None
+                for c in value:
+                    if value.count(c) > instance.last_text.count(c):
+                        new_char = c
+                        break
+                
+                old_chars = set(instance.last_text) if instance.is_note else set()
+                
+                if new_char:
+                    if new_char in old_chars:
+                        old_chars.remove(new_char) # มีอยู่แล้วให้ลบออก (Toggle Off)
+                    else:
+                        old_chars.add(new_char)    # ยังไม่มีให้เพิ่มเข้าไป (Toggle On)
+                
+                final_notes = "".join(sorted(old_chars))
+
+            # [แก้ไข] บันทึกการจดโน้ตลงประวัติ เพื่อให้ปุ่ม Undo/Redo ทำงานได้
+            app.record_history(
+                index=instance.cell_index,
+                old_text=instance.last_text, new_text=final_notes,
+                old_color=instance.foreground_color[:], new_color=[0.5, 0.5, 0.5, 1],
+                old_readonly=instance.readonly, new_readonly=False,
+                score_diff=0
+            )
+
+            self.is_generating = True
+            instance.text = final_notes
+            instance.last_text = final_notes
+            instance.font_size = 26           
+            instance.foreground_color = [0.5, 0.5, 0.5, 1] 
+            instance.is_note = True
+            self.engine.board[row][col] = 0    
+            self.is_generating = False
+            return
+
+        # =====================================
+        # 3. ทำงานใน "โหมดตอบปกติ" (Note: OFF)
+        # =====================================
+        if len(value) > 1 or instance.is_note:
+            # [แก้ไข] ถ้าเปลี่ยนจาก Note เป็นตอบปกติ ให้หาเลขล่าสุดที่พึ่งกดจริงๆ
+            new_char = None
+            for c in value:
+                if value.count(c) > instance.last_text.count(c):
+                    new_char = c
+                    break
+            value = new_char if new_char else value[-1]
+
+        num = int(value)
         is_correct = self.engine.check_move(row, col, num)
         
         old_color = instance.foreground_color[:]
         old_readonly = instance.readonly
 
         if is_correct:
-            new_color = [0, 0.7, 0, 1]
+            new_color = [0, 0.6, 0, 1] # สีเขียว
             new_readonly = True
             score_diff = 100
         else:
-            new_color = [1, 0, 0, 1]
+            new_color = [0.9, 0.1, 0.1, 1] # สีแดง
             new_readonly = False 
             score_diff = -20
 
-        # บันทึกประวัติการเดินก่อนเปลี่ยนค่าจริง
         app.record_history(
             index=instance.cell_index,
             old_text=instance.last_text, new_text=value,
@@ -110,15 +165,14 @@ class SudokuBoard(GridLayout):
         instance.foreground_color = new_color
         instance.readonly = new_readonly
         instance.last_text = value
-        self.engine.board[row][col] = int(value)
+        instance.is_note = False
+        instance.font_size = 26 # คืนค่าเป็นตัวใหญ่
+        self.engine.board[row][col] = num 
         self.is_generating = False
         app.update_score(score_diff)
 
-        # --- ตรวจสอบ Win Condition ---
-        if is_correct:
-            if self.engine.is_game_won():
-                app.show_win_popup()
- 
+        if is_correct and self.engine.is_game_won():
+            app.show_win_popup()
     def clear_board(self, instance=None):
         self.is_generating = True  
         for cell in self.cells:
@@ -250,8 +304,8 @@ class SudokuApp(App):
         btn_clear = Button(text="Clear", font_size=15, bold=True, background_normal='', background_color=[0.9, 0.3, 0.3, 1])
         btn_hint = Button(text="Hint", font_size=15, bold=True, background_normal='', background_color=[0.9, 0.6, 0.1, 1])
         
-        self.btn_note = ToggleButton(text="Note: OFF", font_size=14, bold=True, background_normal='', background_color=[0.5, 0.5, 0.6, 1])
-        self.btn_note.bind(on_state=self.toggle_note) # ผูกคำสั่งเปิด-ปิด
+        self.btn_note = ToggleButton(text="Note: OFF", font_size=14, bold=True, background_normal='',background_down='', background_color=[0.5, 0.5, 0.6, 1])
+        self.btn_note.bind(state=self.toggle_note) # ผูกคำสั่งเปิด-ปิด
         
         btn_new.bind(on_press=lambda inst: self.start_new_game(self.current_difficulty))
         btn_clear.bind(on_press=self.clear_game)
