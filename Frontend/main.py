@@ -189,6 +189,9 @@ class SudokuApp(App):
         title_box.add_widget(subtitle)
         menu_layout.add_widget(title_box)
         
+        self.stats_label = Label(text=self.get_stats_text(), font_size=18, color=[1, 0.8, 0.2, 1], size_hint=(1, 0.25), halign='center')
+        menu_layout.add_widget(self.stats_label)
+
         # [UI Magic 2] background_normal='' ทำให้ปุ่มสีสดและไม่มีเงาดำเทาๆ มาบัง
         btn_easy = Button(text="EASY", font_size=24, bold=True, size_hint=(1, 0.15), 
                           background_normal='', background_color=[0.2, 0.8, 0.4, 1])
@@ -450,9 +453,28 @@ class SudokuApp(App):
     def show_win_popup(self):
         if self.timer_event:
             self.timer_event.cancel()
+        #ทำสถิติใหม่หรือเปล่า เช็คจากคะแนนและเวลา แล้วบันทึกถ้าเป็นสถิติใหม่
+        key = f"stats_{self.current_difficulty}"
+        is_new_record = False
+        
+        # เช็คว่าเคยมีสถิติเก่าไหม
+        if self.store.exists(key):
+            best = self.store.get(key)
+            # ถ้าคะแนนเยอะกว่า หรือ คะแนนเท่ากันแต่เวลาเร็วกว่า = สถิติใหม่!
+            if self.score > best['score'] or (self.score == best['score'] and self.seconds_elapsed < best['time']):
+                is_new_record = True
+        else:
+            is_new_record = True # ถ้ายังไม่เคยชนะโหมดนี้เลย ก็เป็นสถิติใหม่แน่นอน
+
+        # ถ้าเป็นสถิติใหม่ ให้บันทึกลงไฟล์ และเตรียมข้อความอวยพร
+        if is_new_record:
+            self.store.put(key, score=self.score, time=self.seconds_elapsed)
+            record_text = "\n\n🌟 NEW HIGH SCORE! 🌟"
+        else:
+            record_text = ""
 
         content = BoxLayout(orientation='vertical', padding=20, spacing=15)
-        msg_label = Label(text=f"WINNER!\n\nScore: {self.score}\nTime: {self.timer_label.text.split(' ')[1]}", 
+        msg_label = Label(text=f"WINNER!\n\nScore: {self.score}\nTime: {self.timer_label.text.split(' ')[1]}{record_text}", 
                           halign='center', font_size=24, bold=True, color=[1, 0.8, 0.2, 1])
         
         btn_layout = BoxLayout(orientation='horizontal', spacing=10, size_hint=(1, 0.4))
@@ -476,10 +498,22 @@ class SudokuApp(App):
         btn_menu.bind(on_press=back_to_menu_from_popup)
         
         popup.open()
-        
+    def get_stats_text(self):
+        text = "--- BEST RECORDS ---\n"
+        for diff in ["Easy", "Medium", "Hard"]:
+            key = f"stats_{diff}"
+            if self.store.exists(key):
+                data = self.store.get(key)
+                mins, secs = data['time'] // 60, data['time'] % 60
+                text += f"{diff}: {data['score']} pts (Time: {mins:02d}:{secs:02d})\n"
+            else:
+                text += f"{diff}: No Record\n"
+        return text
+    
     def go_to_menu(self, instance=None):
         if self.timer_event:
             self.timer_event.cancel() # หยุดเวลาเมื่อออกไปหน้าเมนู
+        self.stats_label.text = self.get_stats_text()
         self.sm.transition.direction = 'right' # สั่งให้อนิเมชั่นเลื่อนไปทางขวา
         self.sm.current = 'menu' # สลับไปที่หน้า 'menu'
 
