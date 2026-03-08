@@ -10,6 +10,7 @@ from kivy.uix.popup import Popup
 from kivy.clock import Clock
 from kivy.storage.jsonstore import JsonStore 
 from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.togglebutton import ToggleButton # [เพิ่ม] ปุ่มแบบสวิตช์เปิด-ปิด
 
 import sys
 import os
@@ -26,6 +27,7 @@ class SudokuBoard(GridLayout):
         self.cells = []  
         self.engine = SudokuEngine()
         self.is_generating = False 
+        self.note_mode = False  # [เพิ่ม] สถานะโหมดจดโน้ต
 
         for i in range(81):
             cell = TextInput(
@@ -40,6 +42,7 @@ class SudokuBoard(GridLayout):
             
             cell.cell_index = i      
             cell.last_text = ''  # [เพิ่ม] เก็บค่าของช่องก่อนที่จะโดนเปลี่ยน เพื่อใช้เวลา Undo             
+            cell.is_note = False  # [เพิ่ม] แยกสถานะว่าเป็นตัวเลขปกติหรือโน้ต
             cell.bind(text=self.check_answer)     
             
             self.add_widget(cell)
@@ -241,16 +244,23 @@ class SudokuApp(App):
         self.board = SudokuBoard(size_hint=(1, 0.65)) 
         main_layout.add_widget(self.board)
         
-        row1_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), spacing=10)
-        btn_new = Button(text="Restart", font_size=18, bold=True, background_normal='', background_color=[0.2, 0.6, 0.9, 1]) 
-        btn_clear = Button(text="Clear", font_size=18, bold=True, background_normal='', background_color=[0.9, 0.3, 0.3, 1])
-        btn_hint = Button(text="Hint", font_size=18, bold=True, background_normal='', background_color=[0.9, 0.6, 0.1, 1])
+# [ปรับปรุง] ลดไซส์ฟอนต์ปุ่มนิดนึง และเพิ่มปุ่ม Note ลงไปในแถว
+        row1_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), spacing=5)
+        btn_new = Button(text="Restart", font_size=15, bold=True, background_normal='', background_color=[0.2, 0.6, 0.9, 1]) 
+        btn_clear = Button(text="Clear", font_size=15, bold=True, background_normal='', background_color=[0.9, 0.3, 0.3, 1])
+        btn_hint = Button(text="Hint", font_size=15, bold=True, background_normal='', background_color=[0.9, 0.6, 0.1, 1])
+        
+        self.btn_note = ToggleButton(text="Note: OFF", font_size=14, bold=True, background_normal='', background_color=[0.5, 0.5, 0.6, 1])
+        self.btn_note.bind(on_state=self.toggle_note) # ผูกคำสั่งเปิด-ปิด
+        
         btn_new.bind(on_press=lambda inst: self.start_new_game(self.current_difficulty))
         btn_clear.bind(on_press=self.clear_game)
         btn_hint.bind(on_press=self.give_hint)
+        
         row1_layout.add_widget(btn_new)
         row1_layout.add_widget(btn_clear)
         row1_layout.add_widget(btn_hint)
+        row1_layout.add_widget(self.btn_note) # ใส่ปุ่มลงแถว
         main_layout.add_widget(row1_layout)
 
         row2_layout = BoxLayout(orientation='horizontal', size_hint=(1, 0.10), spacing=10)
@@ -498,6 +508,17 @@ class SudokuApp(App):
         btn_menu.bind(on_press=back_to_menu_from_popup)
         
         popup.open()
+    # [เพิ่ม] ฟังก์ชันจัดการเปิดปิดโหมดจดโน้ต
+    def toggle_note(self, instance, value):
+        if value == 'down':
+            instance.text = "Note: ON"
+            instance.background_color = [0.2, 0.8, 0.4, 1] # สีเขียว
+            self.board.note_mode = True
+        else:
+            instance.text = "Note: OFF"
+            instance.background_color = [0.5, 0.5, 0.6, 1] # สีเทา
+            self.board.note_mode = False
+
     def get_stats_text(self):
         # [ตกแต่ง] ใช้ Kivy Markup เปลี่ยนสีตัวหนังสือแบบไล่เฉดสี
         text = "[b][size=22][color=ffcc00] BEST RECORDS [/color][/size][/b]\n\n"
