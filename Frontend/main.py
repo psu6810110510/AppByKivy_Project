@@ -189,7 +189,7 @@ class SudokuApp(App):
         title_box.add_widget(subtitle)
         menu_layout.add_widget(title_box)
         
-        self.stats_label = Label(text=self.get_stats_text(), font_size=18, color=[1, 0.8, 0.2, 1], size_hint=(1, 0.25), halign='center')
+        self.stats_label = Label(text=self.get_stats_text(), font_size=18, color=[1, 0.8, 0.2, 1], size_hint=(1, 0.25), halign='center', markup=True)
         menu_layout.add_widget(self.stats_label)
 
         # [UI Magic 2] background_normal='' ทำให้ปุ่มสีสดและไม่มีเงาดำเทาๆ มาบัง
@@ -469,7 +469,7 @@ class SudokuApp(App):
         # ถ้าเป็นสถิติใหม่ ให้บันทึกลงไฟล์ และเตรียมข้อความอวยพร
         if is_new_record:
             self.store.put(key, score=self.score, time=self.seconds_elapsed)
-            record_text = "\n\n🌟 NEW HIGH SCORE! 🌟"
+            record_text = "\n\n NEW HIGH SCORE! "
         else:
             record_text = ""
 
@@ -499,15 +499,25 @@ class SudokuApp(App):
         
         popup.open()
     def get_stats_text(self):
-        text = "--- BEST RECORDS ---\n"
+        # [ตกแต่ง] ใช้ Kivy Markup เปลี่ยนสีตัวหนังสือแบบไล่เฉดสี
+        text = "[b][size=22][color=ffcc00] BEST RECORDS [/color][/size][/b]\n\n"
+        
+        # กำหนดสีให้เข้ากับปุ่ม (Easy=เขียว, Medium=ส้ม, Hard=แดง)
+        diff_colors = {"Easy": "33cc66", "Medium": "f29c1f", "Hard": "e64d4d"}
+        
         for diff in ["Easy", "Medium", "Hard"]:
             key = f"stats_{diff}"
+            color_hex = diff_colors[diff]
+            
             if self.store.exists(key):
                 data = self.store.get(key)
                 mins, secs = data['time'] // 60, data['time'] % 60
-                text += f"{diff}: {data['score']} pts (Time: {mins:02d}:{secs:02d})\n"
+                # เน้นสีระดับความยาก สีคะแนนเป็นขาว และสีเวลาเป็นเทา
+                text += f"[b][color={color_hex}]{diff}:[/color][/b]  [color=ffffff]{data['score']} pts[/color]  [color=aaaaaa](Time: {mins:02d}:{secs:02d})[/color]\n"
             else:
-                text += f"{diff}: No Record\n"
+                # ถ้ายังไม่มีสถิติ ให้ขึ้นตัวเทาๆ มืดๆ
+                text += f"[b][color={color_hex}]{diff}:[/color][/b]  [color=666666]No Record[/color]\n"
+                
         return text
     
     def go_to_menu(self, instance=None):
